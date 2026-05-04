@@ -12,16 +12,28 @@ type SheetData = {
 
 // Canonical types imported from app/lib/types.ts
 
-type SheetData = {
-  tasks: Task[];
-  guests: Guest[];
-  timeline: TimelineEvent[];
-  budget: BudgetItem[];
-  vendors: Vendor[];
-}
-
 let cache: { data: SheetData; ts: number } | null = null
 const DEFAULT_REVALIDATE_SECONDS = 120
+
+// Decode credentials from environment: try BASE64 first, then raw JSON
+const decodeCreds = (): any => {
+  const base64 = process.env.GOOGLE_SHEETS_CREDENTIALS_BASE64
+  if (base64) {
+    try {
+      const json = Buffer.from(base64, 'base64').toString('utf8')
+      return JSON.parse(json)
+    } catch {
+      throw new Error('Invalid GOOGLE_SHEETS_CREDENTIALS_BASE64')
+    }
+  }
+  const raw = process.env.GOOGLE_SHEETS_CREDENTIALS
+  if (!raw) throw new Error('GOOGLE_SHEETS_CREDENTIALS not configured')
+  try {
+    return JSON.parse(raw)
+  } catch {
+    throw new Error('Invalid GOOGLE_SHEETS_CREDENTIALS JSON')
+  }
+}
 
 const getCredentials = (): any => {
   const raw = process.env.GOOGLE_SHEETS_CREDENTIALS
@@ -58,12 +70,17 @@ const mapRows = (headers: string[], row: string[]): any => {
 }
 
 const fetchTab = async (tabName: string, headersRange = `${tabName}!A1:Z1` , dataRange = `${tabName}!A2:Z`): Promise<any[]> => {
-  const { sheets, spreadsheetId } = getSheetsClient()
-  const headerRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: headersRange })
-  const dataRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: dataRange })
-  const headers: string[] = headerRes.data.values?.[0] ?? []
-  const rows: string[][] = dataRes.data.values ?? []
-  return rows.map((r) => mapRows(headers, r))
+  try {
+    const { sheets, spreadsheetId } = getSheetsClient()
+    const headerRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: headersRange })
+    const dataRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: dataRange })
+    const headers: string[] = headerRes.data.values?.[0] ?? []
+    const rows: string[][] = dataRes.data.values ?? []
+    return rows.map((r) => mapRows(headers, r))
+  } catch (err) {
+    console.warn(`Tab "${tabName}" not found or error fetching:`, err)
+    return []
+  }
 }
 
 export const getAllSheetData = async (): Promise<SheetData> => {

@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Cherry Blossom Aura palette (Pro Max mood) */
+  --color-bg: #FAF6F8;          /* light pink-beige */
+  --color-surface: #FFFFFF;       /* cards / panels */
+  --color-text: #1F2937;          /* body text */
+  --color-primary: #F48FB1;        /* blush pink */
+  --color-primary-2: #EC6CA3;      /* accent pink */
+  --color-secondary: #D977A6;      /* rose */
+  --color-accent: #6AA7B3;         /* muted teal for contrast */
+  --color-border: #E5D6E0;         /* soft border */
+  --color-soft: #FDE8F0;           /* subtle backgrounds */
+  --color-header: rgba(255, 255, 255, 0.8);
+}
+
+html, body, #__next {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.bg-header {
+  background: linear-gradient(135deg, rgba(245, 204, 226, 0.5), rgba(246, 228, 239, 0.2));
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.btn {
+  background: var(--color-primary);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 0;
+}
+
+.btn.secondary {
+  background: var(--color-soft);
+  color: var(--color-text);
+}
+
+.grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

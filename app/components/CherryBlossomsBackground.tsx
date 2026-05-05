@@ -26,13 +26,13 @@ function generatePetals(count: number): Petal[] {
   return Array.from({ length: count }, (_, i) => ({
     id: i,
     x: Math.random() * 120 - 10,
-    size: 8 + Math.random() * 18,
-    duration: 12 + Math.random() * 20,
-    delay: Math.random() * -25,
-    opacity: 0.15 + Math.random() * 0.35,
+    size: 20 + Math.random() * 20,
+    duration: 10 + Math.random() * 15,
+    delay: Math.random() * -20,
+    opacity: 0.7 + Math.random() * 0.3,
     rotation: Math.random() * 360,
-    drift: -40 + Math.random() * 80,
-    wobble: 20 + Math.random() * 40,
+    drift: -60 + Math.random() * 120,
+    wobble: 30 + Math.random() * 50,
   }))
 }
 
@@ -92,39 +92,38 @@ function CherryTreeSVG({ tree }: { tree: CherryTree }) {
 function FallingPetal({ petal, scrollVelocity }: { petal: Petal; scrollVelocity: number }) {
   const isScrollingDown = scrollVelocity > 0
   const absVelocity = Math.min(Math.abs(scrollVelocity), 80)
-  const speedMultiplier = 1 + absVelocity / 30
+  const speedMultiplier = 1 + absVelocity / 20
   const direction = isScrollingDown ? 1 : -1
 
-  const fallDuration = petal.duration / (isScrollingDown ? speedMultiplier : Math.max(0.5, 1 - absVelocity / 60))
-  const extraDrift = absVelocity * direction * 0.5
+  const fallDuration = petal.duration / (isScrollingDown ? speedMultiplier : Math.max(0.5, 1 - absVelocity / 50))
+  const extraDrift = absVelocity * direction * 1.5
 
   const style: React.CSSProperties = useMemo(() => ({
     ['--petal-x' as string]: `${petal.x}vw`,
     ['--petal-size' as string]: `${petal.size}px`,
     ['--petal-duration' as string]: `${fallDuration}s`,
     ['--petal-delay' as string]: `${petal.delay}s`,
-    ['--petal-opacity' as string]: petal.opacity + (absVelocity / 200),
+    ['--petal-opacity' as string]: petal.opacity + (absVelocity / 150),
     ['--petal-rotation' as string]: `${petal.rotation}deg`,
     ['--petal-drift' as string]: `${petal.drift + extraDrift}px`,
-    ['--petal-wobble' as string]: `${petal.wobble + absVelocity * 0.3}px`,
+    ['--petal-wobble' as string]: `${petal.wobble + absVelocity * 0.8}px`,
     position: 'absolute' as const,
     left: `${petal.x}vw`,
     top: '-30px',
     width: `${petal.size}px`,
     height: `${petal.size}px`,
-    opacity: petal.opacity + (absVelocity / 300),
+    opacity: petal.opacity + (absVelocity / 200),
     pointerEvents: 'none' as const,
     zIndex: 1,
-    animation: `petalFall ${fallDuration}s linear ${petal.delay}s infinite, petalWobble ${Math.max(0.5, 2 + Math.random() * 3 - absVelocity / 20)}s ease-in-out ${petal.delay}s infinite, petalSpin ${fallDuration * 0.8}s linear ${petal.delay}s infinite`,
-    filter: absVelocity > 20 ? `blur(${absVelocity / 100}px)` : undefined,
+    animation: `petalFall ${fallDuration}s linear ${petal.delay}s infinite, petalWobble ${Math.max(0.5, 2 + Math.random() * 3 - absVelocity / 15)}s ease-in-out ${petal.delay}s infinite, petalSpin ${fallDuration * 0.8}s linear ${petal.delay}s infinite`,
   }), [petal, fallDuration, extraDrift, absVelocity])
 
   return (
     <div style={style}>
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-        <path d="M12 2C12 2 8 6 8 10C8 12.2 9.8 14 12 14C14.2 14 16 12.2 16 10C16 6 12 2 12 2Z" fill="rgba(242, 205, 211, 0.7)" stroke="rgba(230, 173, 176, 0.4)" strokeWidth="0.5" />
-        <path d="M12 2C12 2 16 6 16 10C16 12.2 14.2 14 12 14C9.8 14 8 12.2 8 10C8 6 12 2 12 2Z" fill="rgba(250, 240, 242, 0.5)" stroke="rgba(242, 205, 211, 0.3)" strokeWidth="0.5" />
-        <ellipse cx="12" cy="10" rx="1.5" ry="2" fill="rgba(213, 91, 89, 0.15)" />
+        <path d="M12 2C12 2 8 6 8 10C8 12.2 9.8 14 12 14C14.2 14 16 12.2 16 10C16 6 12 2 12 2Z" fill="#F2CDD3" stroke="#D55B59" strokeWidth="0.3" />
+        <path d="M12 2C12 2 16 6 16 10C16 12.2 14.2 14 12 14C9.8 14 8 12.2 8 10C8 6 12 2 12 2Z" fill="#FAF0F2" stroke="#F2CDD3" strokeWidth="0.3" />
+        <ellipse cx="12" cy="10" rx="1.5" ry="2" fill="#D55B59" />
       </svg>
     </div>
   )
@@ -158,7 +157,7 @@ export function CherryBlossomsBackground() {
   }, [])
 
   useEffect(() => {
-    setPetals(generatePetals(35))
+    setPetals(generatePetals(50))
   }, [])
 
   useEffect(() => {
@@ -199,7 +198,7 @@ export function CherryBlossomsBackground() {
   if (isReducedMotion) return null
 
   return (
-    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
+    <div key="blossoms-active" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 1, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, transform: `translateY(${scrollY * 0.15}px)`, willChange: 'transform' }}>
         {trees.filter(t => t.layer === 'far').map((tree, i) => (<CherryTreeSVG key={`far-${i}`} tree={tree} />))}
       </div>

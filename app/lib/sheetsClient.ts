@@ -1,31 +1,29 @@
-import { google } from 'googleapis'
-import type { JWT } from 'google-auth-library'
-import { Task, Guest, TimelineEvent, BudgetItem, Vendor } from './types'
+import {
+  type OverviewEntry,
+  type EntourageMember,
+  type ChecklistItem,
+  type Supplier,
+  type BudgetLine,
+  type Guest,
+  type Sponsor,
+  type TableSeat,
+} from './types'
 
 type SheetData = {
-  tasks: Task[]
+  overview: OverviewEntry[]
+  entourage: EntourageMember[]
+  checklist: ChecklistItem[]
+  suppliers: Supplier[]
+  budget: BudgetLine[]
   guests: Guest[]
-  timeline: TimelineEvent[]
-  budget: BudgetItem[]
-  vendors: Vendor[]
+  sponsors: Sponsor[]
+  seating: TableSeat[]
 }
-
-// Canonical types imported from app/lib/types.ts
 
 let cache: { data: SheetData; ts: number } | null = null
 const DEFAULT_REVALIDATE_SECONDS = 120
 
-// Decode credentials from environment: try BASE64 first, then raw JSON
-const decodeCreds = (): any => {
-  const base64 = process.env.GOOGLE_SHEETS_CREDENTIALS_BASE64
-  if (base64) {
-    try {
-      const json = Buffer.from(base64, 'base64').toString('utf8')
-      return JSON.parse(json)
-    } catch {
-      throw new Error('Invalid GOOGLE_SHEETS_CREDENTIALS_BASE64')
-    }
-  }
+const getCredentials = (): any => {
   const raw = process.env.GOOGLE_SHEETS_CREDENTIALS
   if (!raw) throw new Error('GOOGLE_SHEETS_CREDENTIALS not configured')
   try {
@@ -35,52 +33,158 @@ const decodeCreds = (): any => {
   }
 }
 
-const getCredentials = (): any => {
-  const raw = process.env.GOOGLE_SHEETS_CREDENTIALS
-  if (!raw) throw new Error('GOOGLE_SHEETS_CREDENTIALS not configured')
-  try {
-    return JSON.parse(raw)
-  } catch (e) {
-    throw new Error('Invalid GOOGLE_SHEETS_CREDENTIALS JSON')
-  }
-}
-
 const getSheetsClient = () => {
-  const creds = getCredentials() as any
-  const clientEmail = creds.client_email
-  const privateKey = creds.private_key
-  const auth = new (require('googleapis').google.auth as any).JWT(
-    clientEmail,
+  const creds = getCredentials()
+  const { google } = require('googleapis')
+  const auth = new google.auth.JWT(
+    creds.client_email,
     undefined,
-    privateKey,
-    ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    creds.private_key,
+    ['https://www.googleapis.com/auth/spreadsheets']
   )
-  const sheets = (require('googleapis').google as any).sheets({ version: 'v4', auth })
+  const sheets = google.sheets({ version: 'v4', auth })
   const spreadsheetId = process.env.SPREADSHEET_ID
   if (!spreadsheetId) throw new Error('SPREADSHEET_ID not configured')
   return { sheets, spreadsheetId }
 }
 
-const mapRows = (headers: string[], row: string[]): any => {
-  const obj: any = {}
-  headers.forEach((h, i) => {
-    obj[h] = row[i] ?? ''
-  })
-  return obj
+const fetchRange = async (range: string): Promise<string[][]> => {
+  const { sheets, spreadsheetId } = getSheetsClient()
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId, range })
+  return res.data.values ?? []
 }
 
-const fetchTab = async (tabName: string, headersRange = `${tabName}!A1:Z1` , dataRange = `${tabName}!A2:Z`): Promise<any[]> => {
-  try {
-    const { sheets, spreadsheetId } = getSheetsClient()
-    const headerRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: headersRange })
-    const dataRes = await sheets.spreadsheets.values.get({ spreadsheetId, range: dataRange })
-    const headers: string[] = headerRes.data.values?.[0] ?? []
-    const rows: string[][] = dataRes.data.values ?? []
-    return rows.map((r) => mapRows(headers, r))
-  } catch (err) {
-    console.warn(`Tab "${tabName}" not found or error fetching:`, err)
-    return []
+const parseOverviewTab = (rows: string[][]): { entries: OverviewEntry[]; entourage: EntourageMember[] } => {
+  const entries: OverviewEntry[] = []
+  const entourage: EntourageMember[] = []
+  let inEntourage = false
+
+  for (const row of rows) {
+    const col0 = (row[0] || '').trim()
+    const col1 = (row[1] || '').trim()
+
+    if (col0 === 'ENTOURAGE') {
+      inEntourage = true
+      continue
+    }
+
+    if (inEntourage) {
+      if (col0 === 'Role' || !col0) continue
+      entourage.push({ role: col0, name: col1 })
+    } else {
+      if (!col0 || col0.startsWith('💍')) continue
+      entries.push({ key: col0, value: col1 })
+    }
   }
+
+  return { entries, entourage }
+}
+
+const parseChecklistTab = (rows: string[][]): ChecklistItem[] => {
+  const items: ChecklistItem[] = []
+  for (const row of rows) {
+    const timeframe = (row[0] || '').trim()
+    const task = (row[1] || '').trim()
+    if (!timeframe || !task || timeframe === 'Timeframe') continue
+    items.push({
+      timeframe,
+      task,
+      status: (row[2] || '').trim(),
+      notes: (row[3] || '').trim(),
+    })
+  }
+  return items
+}
+
+const parseSupplierTab = (rows: string[][]): Supplier[] => {
+  const suppliers: Supplier[] = []
+  for (const row of rows) {
+    const category = (row[0] || '').trim()
+    const name = (row[1] || '').trim()
+    if (!category || category === 'SUPPLIER TRACKER Category' || category === 'Category') continue
+    if (category === 'TOTAL') continue
+    suppliers.push({
+      category,
+      supplierName: name,
+      contactPerson: (row[2] || '').trim(),
+      contactNo: (row[3] || '').trim(),
+      totalPrice: (row[4] || '').trim(),
+      downpayment: (row[5] || '').trim(),
+      balance: (row[6] || '').trim(),
+      paid: (row[7] || '').trim(),
+      contractSigned: (row[8] || '').trim(),
+      notes: (row[9] || '').trim(),
+    })
+  }
+  return suppliers
+}
+
+const parseBudgetTab = (rows: string[][]): BudgetLine[] => {
+  const lines: BudgetLine[] = []
+  for (const row of rows) {
+    const item = (row[0] || '').trim()
+    if (!item || item === 'BUDGET SUMMARY Item') continue
+    lines.push({
+      item,
+      amount: (row[1] || '').trim(),
+      notes: (row[2] || '').trim(),
+    })
+  }
+  return lines
+}
+
+const parseGuestTab = (rows: string[][]): Guest[] => {
+  const guests: Guest[] = []
+  for (const row of rows) {
+    const name = (row[0] || '').trim()
+    if (!name || name === 'GUEST LIST Guest Name' || name === 'TOTAL GUESTS' || name === 'Guest Name') continue
+    guests.push({
+      name,
+      side: (row[1] || '').trim(),
+      role: (row[2] || '').trim(),
+      contactNo: (row[3] || '').trim(),
+      invitationSent: (row[4] || '').trim(),
+      rsvpStatus: (row[5] || '').trim(),
+      pax: (row[6] || '').trim(),
+      notes: (row[7] || '').trim(),
+    })
+  }
+  return guests
+}
+
+const parseSponsorTab = (rows: string[][]): Sponsor[] => {
+  const sponsors: Sponsor[] = []
+  for (const row of rows) {
+    const name = (row[0] || '').trim()
+    if (!name || name === 'PRINCIPAL SPONSORS (NINONGS & NINANGS)' || name === 'Name') continue
+    sponsors.push({
+      name,
+      side: (row[1] || '').trim(),
+      role: (row[2] || '').trim(),
+    })
+  }
+  return sponsors
+}
+
+const parseSeatingTab = (rows: string[][]): TableSeat[] => {
+  if (rows.length < 2) return []
+  const headerRow = rows[1]
+  const tables: TableSeat[] = []
+  for (let i = 0; i < headerRow.length; i++) {
+    const header = (headerRow[i] || '').trim()
+    if (!header) continue
+    const match = header.match(/TABLE\s+(\d+)/i)
+    if (match) {
+      const tableNum = parseInt(match[1], 10)
+      const guests: string[] = []
+      for (let r = 2; r < rows.length; r++) {
+        const guestName = (rows[r]?.[i] || '').trim()
+        if (guestName) guests.push(guestName)
+      }
+      tables.push({ tableNumber: tableNum, guests })
+    }
+  }
+  return tables.sort((a, b) => a.tableNumber - b.tableNumber)
 }
 
 export const getAllSheetData = async (): Promise<SheetData> => {
@@ -88,109 +192,37 @@ export const getAllSheetData = async (): Promise<SheetData> => {
   const renew = Number(process.env.REVALIDATE_SECONDS ?? DEFAULT_REVALIDATE_SECONDS)
   if (cache && now - cache.ts < renew * 1000) return cache.data
 
-  // Fetch raw tab rows
-  const [tasksRaw, guestsRaw, timelineRaw, budgetRaw, vendorsRaw] = await Promise.all([
-    fetchTab('Tasks'),
-    fetchTab('Guests'),
-    fetchTab('Timeline'),
-    fetchTab('Budget'),
-    fetchTab('Vendors'),
+  const [
+    overviewRaw,
+    checklistRaw,
+    supplierRaw,
+    budgetRaw,
+    guestRaw,
+    sponsorRaw,
+    seatingRaw,
+  ] = await Promise.all([
+    fetchRange('Wedding Overview!A1:B50'),
+    fetchRange('Timeline & Checklist!A2:D'),
+    fetchRange('Supplier Tracker!A2:J'),
+    fetchRange('Budget Summary!A2:C'),
+    fetchRange('Guest List!A2:H'),
+    fetchRange('Principal Sponsors!A2:C'),
+    fetchRange('Seating Plan!A1:N'),
   ])
 
-  // Helpers to map rows to canonical types with header-name flexibility
-  const mapValue = (row: any, keys: string[]) => {
-    for (const k of keys) {
-      if (row && Object.prototype.hasOwnProperty.call(row, k) && row[k] !== undefined) {
-        return row[k]
-      }
-    }
-    return ''
+  const { entries, entourage } = parseOverviewTab(overviewRaw)
+
+  const data: SheetData = {
+    overview: entries,
+    entourage,
+    checklist: parseChecklistTab(checklistRaw),
+    suppliers: parseSupplierTab(supplierRaw),
+    budget: parseBudgetTab(budgetRaw),
+    guests: parseGuestTab(guestRaw),
+    sponsors: parseSponsorTab(sponsorRaw),
+    seating: parseSeatingTab(seatingRaw),
   }
-
-  const mapTask = (row: any, index: number): Task => {
-    // common header synonyms
-    const title = mapValue(row, ['Title', 'Task', 'Task Title']) || mapValue(row, ['Name'])
-    const status = mapValue(row, ['Status', 'State', 'Progress']) || 'pending'
-    const dueDate = mapValue(row, ['Due Date', 'DueDate', 'Due'])
-    const assignee = mapValue(row, ['Assignee', 'Owner', 'Responsible'])
-    const category = mapValue(row, ['Category', 'Bucket', 'Type'])
-    const notes = mapValue(row, ['Notes', 'Comment', 'Notes & Comments'])
-    const id = row['id'] ?? row['ID'] ?? `task-${index}`
-    return { id: String(id), title: title ?? '', status: String(status), dueDate, assignee, category, notes }
-  }
-
-  const mapGuest = (row: any, index: number): Guest => {
-    const name = mapValue(row, ['Name', 'Guest Name'])
-    const rsvp = mapValue(row, ['RSVP', 'rsvp', 'Response']) || ''
-    const plusOne = mapValue(row, ['Plus One', 'PlusOne'])
-    const dietary = mapValue(row, ['Dietary', 'Diet'])
-    const contact = mapValue(row, ['Contact', 'Phone', 'Email'])
-    const id = row['id'] ?? row['ID'] ?? `guest-${index}`
-    return { id: String(id), name: name ?? '', rsvp: String(rsvp), plusOne, dietary, contact }
-  }
-
-  const mapTimeline = (row: any, index: number): TimelineEvent => {
-    const event = mapValue(row, ['Event', 'Event Name', 'Title'])
-    const date = mapValue(row, ['Date', 'Date/Time', 'EventDate'])
-    const location = mapValue(row, ['Location', 'Place'])
-    const notes = mapValue(row, ['Notes', 'Notes & Details'])
-    const id = row['id'] ?? row['ID'] ?? `timeline-${index}`
-    return { id: String(id), event: event ?? '', date, location, notes }
-  }
-
-  const mapBudget = (row: any, index: number): BudgetItem => {
-    const category = mapValue(row, ['Category', 'Bucket', 'Group'])
-    const item = mapValue(row, ['Item', 'Description'])
-    const estimated = mapValue(row, ['Est', 'Estimated', 'Budgeted'])
-    const actual = mapValue(row, ['Actual', 'Spent', 'ActualCost'])
-    const status = mapValue(row, ['Status', 'State']) || 'pending'
-    const id = row['id'] ?? row['ID'] ?? `budget-${index}`
-    return { id: String(id), category, item, estimated, actual, status }
-  }
-
-  const mapVendor = (row: any, index: number): Vendor => {
-    const name = mapValue(row, ['Name', 'Vendor Name'])
-    const category = mapValue(row, ['Category', 'Type'])
-    const contact = mapValue(row, ['Contact', 'Phone', 'Email'])
-    const dueDate = mapValue(row, ['Due Date', 'DueDate', 'Date'])
-    const notes = mapValue(row, ['Notes', 'Notes & Details'])
-    const id = row['id'] ?? row['ID'] ?? `vendor-${index}`
-    return { id: String(id), name: name ?? '', category, contact, dueDate, notes }
-  }
-
-  const tasks: Task[] = tasksRaw.map((r, i) => mapTask(r, i))
-  const guests: Guest[] = guestsRaw.map((r, i) => mapGuest(r, i))
-  const timeline: TimelineEvent[] = timelineRaw.map((r, i) => mapTimeline(r, i))
-  const budget: BudgetItem[] = budgetRaw.map((r, i) => mapBudget(r, i))
-  const vendors: Vendor[] = vendorsRaw.map((r, i) => mapVendor(r, i))
-
-  const data: SheetData = { tasks, guests, timeline, budget, vendors }
 
   cache = { data, ts: now }
   return data
-}
-
-export const getTasks = async (): Promise<any[]> => {
-  const data = await getAllSheetData()
-  return data.tasks
-}
-
-export const getGuests = async (): Promise<any[]> => {
-  const data = await getAllSheetData()
-  return data.guests
-}
-
-export const getTimeline = async (): Promise<any[]> => {
-  const data = await getAllSheetData()
-  return data.timeline
-}
-
-export const getBudget = async (): Promise<any[]> => {
-  const data = await getAllSheetData()
-  return data.budget
-}
-
-export const getVendors = async (): Promise<any[]> => {
-  const data = await getAllSheetData()
-  return data.vendors
 }

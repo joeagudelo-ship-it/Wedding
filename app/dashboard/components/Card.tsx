@@ -1,13 +1,11 @@
-export default function Card({ title, value }: { title: string; value: string | number }) {
+export default function Card({ title, value, subtitle, accent }: { title: string; value: string | number; subtitle?: string; accent?: string }) {
   return (
-    <div className="card">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-600">{title}</span>
-        <span className="text-sm text-gray-500"></span>
+    <div className="card" style={{ borderTop: `3px solid ${accent || 'var(--primary)'}` }}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>{title}</span>
       </div>
-      <div className="mt-2">
-        <span className="text-2xl font-semibold">{value}</span>
-      </div>
+      <div className="text-2xl font-semibold peso" style={{ color: 'var(--text)' }}>{value}</div>
+      {subtitle && <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{subtitle}</div>}
     </div>
   )
 }

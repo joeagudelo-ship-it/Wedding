@@ -2,27 +2,34 @@ import React from 'react'
 import './globals.css'
 import Link from 'next/link'
 
+const navLinks = [
+  { href: '/dashboard', label: 'Overview' },
+  { href: '/dashboard/timeline', label: 'Timeline' },
+  { href: '/dashboard/vendors', label: 'Suppliers' },
+  { href: '/dashboard/budget', label: 'Budget' },
+  { href: '/dashboard/guests', label: 'Guests' },
+  { href: '/dashboard/sponsors', label: 'Sponsors' },
+  { href: '/dashboard/seating', label: 'Seating' },
+]
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <header className="bg-header p-4 shadow-md">
-          <div className="container mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="w-8 h-8 rounded-full bg-primary inline-block" />
-              <span className="text-xl font-semibold">Wedding Tracker</span>
-            </div>
-            <nav className="hidden md:flex space-x-6 text-sm">
-              <Link href="/dashboard" className="hover:underline">Dashboard</Link>
-              <Link href="/dashboard/tasks" className="hover:underline">Tasks</Link>
-              <Link href="/dashboard/guests" className="hover:underline">Guests</Link>
-              <Link href="/dashboard/timeline" className="hover:underline">Timeline</Link>
-              <Link href="/dashboard/budget" className="hover:underline">Budget</Link>
-              <Link href="/dashboard/vendors" className="hover:underline">Vendors</Link>
+        <header className="bg-header sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between">
+            <Link href="/dashboard" className="flex items-center gap-3 no-underline focus-ring" style={{ borderRadius: 6 }}>
+              <span className="w-8 h-8 rounded-full inline-flex items-center justify-center text-white text-xs font-semibold" style={{ background: 'var(--sakura-red)' }}>W</span>
+              <span className="text-lg font-display" style={{ fontSize: 20, color: 'var(--brown-deep)', letterSpacing: '0.02em' }}>Wedding Tracker</span>
+            </Link>
+            <nav className="hidden md:flex items-center gap-0.5">
+              {navLinks.map(link => (
+                <Link key={link.href} href={link.href} className="nav-link">{link.label}</Link>
+              ))}
             </nav>
           </div>
         </header>
-        <main className="p-4 container mx-auto">{children}</main>
+        <main className="max-w-6xl mx-auto px-4 py-6 min-h-dvh">{children}</main>
       </body>
     </html>
   )

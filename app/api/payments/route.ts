@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
     const updates: any[] = []
     if (downpayment !== undefined) {
-      updates.push({ range: `Supplier Tracker!E${row}`, values: [[downpayment]] })
+      updates.push({ range: `Supplier Tracker!F${row}`, values: [[downpayment]] })
     }
     if (paid !== undefined) {
       updates.push({ range: `Supplier Tracker!H${row}`, values: [[paid]] })

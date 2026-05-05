@@ -5,7 +5,7 @@ import { useToast } from '../../components/ToastProvider'
 
 type Sponsor = { name: string; side: string; role: string }
 
-function EditableCell({ value, rowIndex, field, side, role, onUpdate, isNew }: { value: string; rowIndex: number | null; field: 'name' | 'role'; side: string; role: string; onUpdate: () => void; isNew: boolean }) {
+function EditableCell({ value, rowIndex, field, side, role, onUpdate }: { value: string; rowIndex: number | null; field: 'name' | 'role'; side: string; role: string; onUpdate: () => void }) {
   const { addToast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -45,94 +45,21 @@ function EditableCell({ value, rowIndex, field, side, role, onUpdate, isNew }: {
   if (isEditing) {
     return (
       <div className="flex gap-1.5 items-center">
-        <input className="input-field" value={draft} onChange={e => setDraft(e.target.value)} autoFocus onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setDraft(value); setIsEditing(false) } }} style={{ flex: 1 }} />
-        <button className="btn btn-primary" onClick={save} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Save</button>
-        <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 6px', fontSize: 14, color: 'var(--danger)', background: 'transparent' }}>×</button>
+        <input className="input-field" value={draft} onChange={e => setDraft(e.target.value)} autoFocus onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { setDraft(value); setIsEditing(false) } }} style={{ flex: 1, padding: '4px 8px', fontSize: 13, minHeight: 28 }} />
+        <button className="btn btn-primary" onClick={save} disabled={loading} style={{ padding: '4px 8px', fontSize: 11, minHeight: 28 }}>Save</button>
+        <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 6px', fontSize: 14, color: 'var(--danger)', background: 'transparent', minHeight: 28 }}>×</button>
       </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-between" style={{ cursor: 'pointer' }} onClick={() => { setDraft(value); setIsEditing(true) }}>
+    <div className="flex items-center justify-between" style={{ cursor: 'pointer', minHeight: 28 }} onClick={() => { setDraft(value); setIsEditing(true) }}>
       {value ? (
         <span className="text-sm font-medium" style={{ color: 'var(--brown-deep)' }}>{value}</span>
       ) : (
         <span className="text-xs italic" style={{ color: 'var(--brown-muted)' }}>Empty — click to add</span>
       )}
       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--brown-muted)', opacity: 0.3, flexShrink: 0 }}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
-    </div>
-  )
-}
-
-function SponsorsTable({ side, sponsors, onUpdate }: { side: string; sponsors: Sponsor[]; onUpdate: () => void }) {
-  const ninongs = sponsors.filter(s => s.role === 'Ninong')
-  const ninangs = sponsors.filter(s => s.role === 'Ninang')
-  const pairCount = Math.max(ninongs.length, ninangs.length, 1)
-
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-4">
-        <span className="w-2 h-2 rounded-full" style={{ background: side === 'Groom' ? 'var(--sakura-red)' : 'var(--info)' }} />
-        <h3 className="text-sm uppercase tracking-wider" style={{ color: 'var(--brown-deep)', letterSpacing: '0.06em' }}>{side} Side</h3>
-      </div>
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th style={{ width: 80 }}>Pair #</th>
-              <th>
-                <div className="flex items-center gap-2">
-                  <span className="badge badge-neutral">Ninong</span>
-                </div>
-              </th>
-              <th>
-                <div className="flex items-center gap-2">
-                  <span className="badge badge-info">Ninang</span>
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from({ length: pairCount }, (_, i) => {
-              const ninong = ninongs[i] || null
-              const ninang = ninangs[i] || null
-              return (
-                <tr key={i}>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-full inline-flex items-center justify-center text-xs font-semibold" style={{ background: 'linear-gradient(135deg, var(--sakura-red), var(--sakura))', color: '#fff' }}>
-                        {i + 1}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <EditableCell
-                      value={ninong?.name || ''}
-                      rowIndex={ninong ? sponsors.indexOf(ninong) : null}
-                      field="name"
-                      side={side}
-                      role="Ninong"
-                      onUpdate={onUpdate}
-                      isNew={!ninong}
-                    />
-                  </td>
-                  <td>
-                    <EditableCell
-                      value={ninang?.name || ''}
-                      rowIndex={ninang ? sponsors.indexOf(ninang) : null}
-                      field="name"
-                      side={side}
-                      role="Ninang"
-                      onUpdate={onUpdate}
-                      isNew={!ninang}
-                    />
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
     </div>
   )
 }
@@ -152,15 +79,14 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
     finally { setLoading(false) }
   }, [])
 
-  const groomSponsors = data.filter(s => s.side === 'Groom')
-  const brideSponsors = data.filter(s => s.side === 'Bride')
+  const groomNinongs = data.filter(s => s.side === 'Groom' && s.role === 'Ninong')
+  const groomNinangs = data.filter(s => s.side === 'Groom' && s.role === 'Ninang')
+  const brideNinongs = data.filter(s => s.side === 'Bride' && s.role === 'Ninong')
+  const brideNinangs = data.filter(s => s.side === 'Bride' && s.role === 'Ninang')
 
-  const groomNinongs = groomSponsors.filter(s => s.role === 'Ninong').length
-  const groomNinangs = groomSponsors.filter(s => s.role === 'Ninang').length
-  const brideNinongs = brideSponsors.filter(s => s.role === 'Ninong').length
-  const brideNinangs = brideSponsors.filter(s => s.role === 'Ninang').length
-  const groomPairs = Math.max(groomNinongs, groomNinangs)
-  const bridePairs = Math.max(brideNinongs, brideNinangs)
+  const totalNinong = groomNinongs.length + brideNinongs.length
+  const totalNinang = groomNinangs.length + brideNinangs.length
+  const pairCount = Math.max(groomNinongs.length, groomNinangs.length, brideNinongs.length, brideNinangs.length, 1)
 
   return (
     <div className="fade-in space-y-6">
@@ -176,11 +102,11 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
         </div>
         <div className="card" style={{ borderTop: '2px solid var(--sakura-red)' }}>
           <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.08em' }}>Total Pairs</div>
-          <div className="text-lg font-semibold">{groomPairs + bridePairs}</div>
+          <div className="text-lg font-semibold">{pairCount}</div>
         </div>
         <div className="card" style={{ borderTop: '2px solid var(--info)' }}>
           <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.08em' }}>Ninongs / Ninangs</div>
-          <div className="text-lg font-semibold">{data.filter(s => s.role === 'Ninong').length} / {data.filter(s => s.role === 'Ninang').length}</div>
+          <div className="text-lg font-semibold">{totalNinong} / {totalNinang}</div>
         </div>
       </div>
 
@@ -190,9 +116,106 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
         {loading ? (
           <div className="text-center py-8" style={{ color: 'var(--brown-muted)' }}>Loading...</div>
         ) : (
-          <div className="space-y-6">
-            <SponsorsTable side="Groom" sponsors={groomSponsors} onUpdate={fetchData} />
-            <SponsorsTable side="Bride" sponsors={brideSponsors} onUpdate={fetchData} />
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th rowSpan={2} style={{ width: 70, verticalAlign: 'middle' }}>Pair #</th>
+                  <th colSpan={2} style={{ textAlign: 'center' }}>
+                    <span className="badge badge-neutral">Ninong</span>
+                  </th>
+                  <th colSpan={2} style={{ textAlign: 'center' }}>
+                    <span className="badge badge-info">Ninang</span>
+                  </th>
+                </tr>
+                <tr>
+                  <th style={{ width: 160 }}>
+                    <div className="flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--sakura-red)' }} />
+                      Groom Side
+                    </div>
+                  </th>
+                  <th style={{ width: 160 }}>
+                    <div className="flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--info)' }} />
+                      Bride Side
+                    </div>
+                  </th>
+                  <th style={{ width: 160 }}>
+                    <div className="flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--sakura-red)' }} />
+                      Groom Side
+                    </div>
+                  </th>
+                  <th style={{ width: 160 }}>
+                    <div className="flex items-center gap-1.5 justify-center">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--info)' }} />
+                      Bride Side
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: pairCount }, (_, i) => {
+                  const gn = groomNinongs[i] || null
+                  const bn = brideNinongs[i] || null
+                  const ga = groomNinangs[i] || null
+                  const ba = brideNinangs[i] || null
+
+                  return (
+                    <tr key={i}>
+                      <td>
+                        <div className="flex items-center justify-center">
+                          <span className="w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-semibold" style={{ background: 'linear-gradient(135deg, var(--sakura-red), var(--sakura))', color: '#fff' }}>
+                            {i + 1}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <EditableCell
+                          value={gn?.name || ''}
+                          rowIndex={gn ? data.indexOf(gn) : null}
+                          field="name"
+                          side="Groom"
+                          role="Ninong"
+                          onUpdate={fetchData}
+                        />
+                      </td>
+                      <td>
+                        <EditableCell
+                          value={bn?.name || ''}
+                          rowIndex={bn ? data.indexOf(bn) : null}
+                          field="name"
+                          side="Bride"
+                          role="Ninong"
+                          onUpdate={fetchData}
+                        />
+                      </td>
+                      <td>
+                        <EditableCell
+                          value={ga?.name || ''}
+                          rowIndex={ga ? data.indexOf(ga) : null}
+                          field="name"
+                          side="Groom"
+                          role="Ninang"
+                          onUpdate={fetchData}
+                        />
+                      </td>
+                      <td>
+                        <EditableCell
+                          value={ba?.name || ''}
+                          rowIndex={ba ? data.indexOf(ba) : null}
+                          field="name"
+                          side="Bride"
+                          role="Ninang"
+                          onUpdate={fetchData}
+                        />
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

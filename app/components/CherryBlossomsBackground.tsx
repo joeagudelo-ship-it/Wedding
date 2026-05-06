@@ -89,10 +89,7 @@ function CherryTreeSVG({ tree }: { tree: CherryTree }) {
   )
 }
 
-function FallingPetal({ petal, scrollVelocity }: { petal: Petal; scrollVelocity: number }) {
-  const absVelocity = Math.min(Math.abs(scrollVelocity), 5)
-  const extraDrift = absVelocity * 0.05
-
+function FallingPetal({ petal }: { petal: Petal }) {
   const style: React.CSSProperties = useMemo(() => ({
     ['--petal-x' as string]: `${petal.x}vw`,
     ['--petal-size' as string]: `${petal.size}px`,
@@ -100,7 +97,7 @@ function FallingPetal({ petal, scrollVelocity }: { petal: Petal; scrollVelocity:
     ['--petal-delay' as string]: `${petal.delay}s`,
     ['--petal-opacity' as string]: petal.opacity,
     ['--petal-rotation' as string]: `${petal.rotation}deg`,
-    ['--petal-drift' as string]: `${petal.drift + extraDrift}px`,
+    ['--petal-drift' as string]: `${petal.drift}px`,
     ['--petal-wobble' as string]: `${petal.wobble}px`,
     position: 'absolute' as const,
     left: `${petal.x}vw`,
@@ -111,7 +108,7 @@ function FallingPetal({ petal, scrollVelocity }: { petal: Petal; scrollVelocity:
     pointerEvents: 'none' as const,
     zIndex: 1,
     animation: `petalFall ${petal.duration}s linear ${petal.delay}s infinite, petalWobble ${2 + Math.random() * 3}s ease-in-out ${petal.delay}s infinite, petalSpin ${petal.duration * 0.8}s linear ${petal.delay}s infinite`,
-  }), [petal, extraDrift])
+  }), [petal])
 
   return (
     <div style={style}>
@@ -129,12 +126,8 @@ export function CherryBlossomsBackground() {
   const [trees, setTrees] = useState<CherryTree[]>([])
   const [windowWidth, setWindowWidth] = useState(1200)
   const [scrollY, setScrollY] = useState(0)
-  const [scrollVelocity, setScrollVelocity] = useState(0)
   const [isReducedMotion, setIsReducedMotion] = useState(false)
   const rafRef = useRef<number>(0)
-  const lastScrollY = useRef(0)
-  const lastScrollTime = useRef(Date.now())
-  const velocityDecayRef = useRef<number>(0)
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -161,34 +154,13 @@ export function CherryBlossomsBackground() {
 
   const handleScroll = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    rafRef.current = requestAnimationFrame(() => {
-      const now = Date.now()
-      const currentY = window.scrollY
-      const dt = Math.max(1, now - lastScrollTime.current)
-      const velocity = (currentY - lastScrollY.current) / dt * 16
-      setScrollY(currentY)
-      setScrollVelocity(velocity)
-      lastScrollY.current = currentY
-      lastScrollTime.current = now
-    })
+    rafRef.current = requestAnimationFrame(() => setScrollY(window.scrollY))
   }, [])
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [handleScroll])
-
-  useEffect(() => {
-    const decay = () => {
-      setScrollVelocity(prev => {
-        if (Math.abs(prev) < 0.1) return 0
-        return prev * 0.92
-      })
-      velocityDecayRef.current = requestAnimationFrame(decay)
-    }
-    velocityDecayRef.current = requestAnimationFrame(decay)
-    return () => cancelAnimationFrame(velocityDecayRef.current)
-  }, [])
 
   if (isReducedMotion) return null
 
@@ -203,7 +175,7 @@ export function CherryBlossomsBackground() {
       <div style={{ position: 'absolute', inset: 0, transform: `translateY(${scrollY * 0.03}px)`, willChange: 'transform' }}>
         {trees.filter(t => t.layer === 'near').map((tree, i) => (<CherryTreeSVG key={`near-${i}`} tree={tree} />))}
       </div>
-      {petals.map(petal => (<FallingPetal key={petal.id} petal={petal} scrollVelocity={scrollVelocity} />))}
+      {petals.map(petal => (<FallingPetal key={petal.id} petal={petal} />))}
     </div>
   )
 }

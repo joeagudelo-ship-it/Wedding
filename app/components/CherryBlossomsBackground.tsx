@@ -27,7 +27,7 @@ function generatePetals(count: number): Petal[] {
     id: i,
     x: Math.random() * 120 - 10,
     size: 20 + Math.random() * 20,
-    duration: 15 + Math.random() * 25,
+    duration: 20 + Math.random() * 30,
     delay: Math.random() * -20,
     opacity: 0.7 + Math.random() * 0.3,
     rotation: Math.random() * 360,
@@ -91,11 +91,11 @@ function CherryTreeSVG({ tree }: { tree: CherryTree }) {
 
 function FallingPetal({ petal, scrollVelocity }: { petal: Petal; scrollVelocity: number }) {
   const isScrollingDown = scrollVelocity > 0
-  const absVelocity = Math.min(Math.abs(scrollVelocity), 40)
-  const speedMultiplier = 1 + absVelocity / 60
+  const absVelocity = Math.min(Math.abs(scrollVelocity), 15)
+  const speedMultiplier = 1 + absVelocity / 200
   const direction = isScrollingDown ? 1 : -1
 
-  const fallDuration = petal.duration / (isScrollingDown ? speedMultiplier : Math.max(0.7, 1 - absVelocity / 80))
+  const fallDuration = petal.duration / (isScrollingDown ? speedMultiplier : Math.max(0.8, 1 - absVelocity / 150))
   const extraDrift = absVelocity * direction * 0.2
 
   const style: React.CSSProperties = useMemo(() => ({
@@ -103,19 +103,19 @@ function FallingPetal({ petal, scrollVelocity }: { petal: Petal; scrollVelocity:
     ['--petal-size' as string]: `${petal.size}px`,
     ['--petal-duration' as string]: `${fallDuration}s`,
     ['--petal-delay' as string]: `${petal.delay}s`,
-    ['--petal-opacity' as string]: petal.opacity + (absVelocity / 300),
+    ['--petal-opacity' as string]: petal.opacity + (absVelocity / 400),
     ['--petal-rotation' as string]: `${petal.rotation}deg`,
     ['--petal-drift' as string]: `${petal.drift + extraDrift}px`,
-    ['--petal-wobble' as string]: `${petal.wobble + absVelocity * 0.3}px`,
+    ['--petal-wobble' as string]: `${petal.wobble + absVelocity * 0.1}px`,
     position: 'absolute' as const,
     left: `${petal.x}vw`,
     top: '-30px',
     width: `${petal.size}px`,
     height: `${petal.size}px`,
-    opacity: petal.opacity + (absVelocity / 400),
+    opacity: petal.opacity + (absVelocity / 500),
     pointerEvents: 'none' as const,
     zIndex: 1,
-    animation: `petalFall ${fallDuration}s linear ${petal.delay}s infinite, petalWobble ${Math.max(0.8, 2 + Math.random() * 3 - absVelocity / 25)}s ease-in-out ${petal.delay}s infinite, petalSpin ${fallDuration * 0.8}s linear ${petal.delay}s infinite`,
+    animation: `petalFall ${fallDuration}s linear ${petal.delay}s infinite, petalWobble ${Math.max(1.5, 2.5 + Math.random() * 3 - absVelocity / 50)}s ease-in-out ${petal.delay}s infinite, petalSpin ${fallDuration * 0.8}s linear ${petal.delay}s infinite`,
   }), [petal, fallDuration, extraDrift, absVelocity])
 
   return (

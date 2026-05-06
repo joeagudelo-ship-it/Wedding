@@ -29,29 +29,37 @@ function SupplierRow({ supplier, rowIndex, onUpdate }: { supplier: Supplier; row
   const save = async () => {
     setLoading(true)
     try {
-      await fetch('/api/suppliers', {
+      const res = await fetch('/api/suppliers', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rowIndex, ...data }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update')
       addToast('Supplier updated')
       setIsEditing(false)
       onUpdate()
-    } catch { addToast('Failed to update', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to update', 'error')
+    } finally { setLoading(false) }
   }
 
   const remove = async () => {
     if (!confirm(`Remove ${supplier.supplierName}?`)) return
     setLoading(true)
     try {
-      await fetch('/api/suppliers', {
+      const res = await fetch('/api/suppliers', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rowIndex }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to delete')
       addToast('Supplier removed')
       onUpdate()
-    } catch { addToast('Failed to delete', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to delete', 'error')
+    } finally { setLoading(false) }
   }
 
   const cancel = () => { setData(supplier); setIsEditing(false) }
@@ -119,15 +127,19 @@ function AddSupplierForm({ onAdd }: { onAdd: () => void }) {
     if (!data.category || !data.supplierName) return
     setLoading(true)
     try {
-      await fetch('/api/suppliers', {
+      const res = await fetch('/api/suppliers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to add')
       addToast('Supplier added')
       setData({ category: '', supplierName: '', contactPerson: '', contactNo: '', totalPrice: '₱0.00', downpayment: '₱0.00', paid: 'No', contractSigned: 'No', notes: '' })
       onAdd()
-    } catch { addToast('Failed to add', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to add', 'error')
+    } finally { setLoading(false) }
   }
 
   return (
@@ -150,6 +162,7 @@ function AddSupplierForm({ onAdd }: { onAdd: () => void }) {
 }
 
 export default function VendorsClient({ suppliers }: { suppliers: Supplier[] }) {
+  const { addToast } = useToast()
   const [data, setData] = useState(suppliers)
   const [search, setSearch] = useState('')
   const [filterCategory, setFilterCategory] = useState('All')
@@ -160,9 +173,12 @@ export default function VendorsClient({ suppliers }: { suppliers: Supplier[] }) 
     setLoading(true)
     try {
       const res = await fetch('/api/suppliers')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setData(json.suppliers || [])
-    } catch { /* silent */ }
+    } catch (error) {
+      addToast('Failed to load suppliers', 'error')
+    }
     finally { setLoading(false) }
   }, [])
 

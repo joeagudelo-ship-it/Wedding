@@ -39,11 +39,15 @@ function EditableField({ entry, onUpdate }: { entry: OverviewEntry; onUpdate: ()
   const save = async () => {
     setLoading(true)
     try {
-      await fetch('/api/overview', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: entry.key, value }) })
+      const res = await fetch('/api/overview', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: entry.key, value }) })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update')
       addToast(`${entry.key} updated`)
       setIsEditing(false)
       onUpdate()
-    } catch { addToast('Failed to update', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to update', 'error')
+    } finally { setLoading(false) }
   }
 
   const cancel = () => { setValue(entry.value); setIsEditing(false) }
@@ -68,6 +72,7 @@ function EditableField({ entry, onUpdate }: { entry: OverviewEntry; onUpdate: ()
 }
 
 export default function DashboardClient({ overview, entourage, checklist, suppliers, sponsors }: { overview: OverviewEntry[]; entourage: EntourageMember[]; checklist: ChecklistItem[]; suppliers: Supplier[]; sponsors: Sponsor[] }) {
+  const { addToast } = useToast()
   const [data, setData] = useState({ overview, entourage, checklist, suppliers, sponsors })
   const [loading, setLoading] = useState(false)
 
@@ -75,9 +80,12 @@ export default function DashboardClient({ overview, entourage, checklist, suppli
     setLoading(true)
     try {
       const res = await fetch('/api/overview')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setData(d => ({ ...d, overview: json.entries || [], entourage: json.entourage || [] }))
-    } catch { /* silent */ } finally { setLoading(false) }
+    } catch (error) {
+      addToast('Failed to load overview', 'error')
+    } finally { setLoading(false) }
   }, [])
 
   const details = Object.fromEntries(data.overview.map(e => [e.key, e.value]))

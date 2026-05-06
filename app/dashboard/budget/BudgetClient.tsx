@@ -32,15 +32,19 @@ function SupplierRow({ supplier, rowIndex, onUpdate }: { supplier: Supplier; row
   const handleSave = async () => {
     setLoading(true)
     try {
-      await fetch('/api/suppliers', {
+      const res = await fetch('/api/suppliers', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rowIndex, downpayment, paid: paidStatus, notes: supplier.notes }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update')
       addToast('Payment updated')
       setIsEditing(false)
       onUpdate()
-    } catch { addToast('Failed to update', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to update', 'error')
+    } finally { setLoading(false) }
   }
 
   const cancel = () => { setDownpayment(supplier.downpayment); setPaidStatus(supplier.paid); setIsEditing(false) }
@@ -82,21 +86,29 @@ function BudgetLineRow({ line, rowIndex, onUpdate }: { line: BudgetLine; rowInde
   const save = async () => {
     setLoading(true)
     try {
-      await fetch('/api/budget', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rowIndex, item, amount, notes }) })
+      const res = await fetch('/api/budget', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rowIndex, item, amount, notes }) })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update')
       addToast('Budget line updated')
       setIsEditing(false)
       onUpdate()
-    } catch { addToast('Failed to update', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to update', 'error')
+    } finally { setLoading(false) }
   }
 
   const remove = async () => {
     if (!confirm(`Remove "${line.item}"?`)) return
     setLoading(true)
     try {
-      await fetch('/api/budget', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rowIndex }) })
+      const res = await fetch('/api/budget', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rowIndex }) })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to delete')
       addToast('Budget line removed')
       onUpdate()
-    } catch { addToast('Failed to delete', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to delete', 'error')
+    } finally { setLoading(false) }
   }
 
   const cancel = () => { setItem(line.item); setAmount(line.amount); setNotes(line.notes); setIsEditing(false) }
@@ -155,13 +167,17 @@ function AddBudgetForm({ onAdd }: { onAdd: () => void }) {
     if (!item.trim()) return
     setLoading(true)
     try {
-      await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item: item.trim(), amount, notes }) })
+      const res = await fetch('/api/budget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item: item.trim(), amount, notes }) })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to add')
       addToast('Budget line added')
       setItem('')
       setAmount('₱0.00')
       setNotes('')
       onAdd()
-    } catch { addToast('Failed to add', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to add', 'error')
+    } finally { setLoading(false) }
   }
 
   return (
@@ -184,6 +200,7 @@ function AddBudgetForm({ onAdd }: { onAdd: () => void }) {
 }
 
 export default function BudgetClient({ suppliers, budget }: { suppliers: Supplier[]; budget: BudgetLine[] }) {
+  const { addToast } = useToast()
   const [suppliersData, setSuppliersData] = useState(suppliers)
   const [budgetData, setBudgetData] = useState(budget)
   const [loading, setLoading] = useState(false)
@@ -192,17 +209,23 @@ export default function BudgetClient({ suppliers, budget }: { suppliers: Supplie
     setLoading(true)
     try {
       const res = await fetch('/api/suppliers')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setSuppliersData(json.suppliers || [])
-    } catch { /* silent */ } finally { setLoading(false) }
+    } catch (error) {
+      addToast('Failed to load suppliers', 'error')
+    } finally { setLoading(false) }
   }, [])
 
   const fetchBudget = useCallback(async () => {
     try {
       const res = await fetch('/api/budget')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setBudgetData(json.lines || [])
-    } catch { /* silent */ }
+    } catch (error) {
+      addToast('Failed to load budget', 'error')
+    }
   }, [])
 
   const totalCommitted = suppliersData.reduce((sum, s) => sum + parseMoney(s.totalPrice), 0)

@@ -25,31 +25,35 @@ function ChecklistRow({ item, rowIndex, onUpdate }: { item: ChecklistItem; rowIn
     setLoading(true)
     try {
       const newStatus = item.status.includes('Done') ? 'Pending' : 'Done'
-      await fetch('/api/checklist', {
+      const res = await fetch('/api/checklist', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rowIndex, status: newStatus }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update')
       addToast(newStatus === 'Done' ? 'Task marked as done' : 'Task marked as pending')
       onUpdate()
-    } catch {
-      addToast('Failed to update status', 'error')
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to update status', 'error')
     } finally { setLoading(false) }
   }
 
   const save = async () => {
     setLoading(true)
     try {
-      await fetch('/api/checklist', {
+      const res = await fetch('/api/checklist', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rowIndex, task, notes }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update')
       addToast('Task updated')
       setIsEditing(false)
       onUpdate()
-    } catch {
-      addToast('Failed to update', 'error')
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to update', 'error')
     } finally { setLoading(false) }
   }
 
@@ -57,15 +61,17 @@ function ChecklistRow({ item, rowIndex, onUpdate }: { item: ChecklistItem; rowIn
     if (!confirm('Delete this task?')) return
     setLoading(true)
     try {
-      await fetch('/api/checklist', {
+      const res = await fetch('/api/checklist', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rowIndex }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to delete')
       addToast('Task deleted')
       onUpdate()
-    } catch {
-      addToast('Failed to delete', 'error')
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to delete', 'error')
     } finally { setLoading(false) }
   }
 
@@ -118,17 +124,19 @@ function AddChecklistForm({ onAdd }: { onAdd: () => void }) {
     if (!task.trim()) return
     setLoading(true)
     try {
-      await fetch('/api/checklist', {
+      const res = await fetch('/api/checklist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ timeframe, task: task.trim(), notes: notes.trim() }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to add')
       addToast('Task added')
       setTask('')
       setNotes('')
       onAdd()
-    } catch {
-      addToast('Failed to add task', 'error')
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to add task', 'error')
     } finally { setLoading(false) }
   }
 
@@ -154,6 +162,7 @@ function AddChecklistForm({ onAdd }: { onAdd: () => void }) {
 }
 
 export default function TimelineClient({ checklist }: { checklist: ChecklistItem[] }) {
+  const { addToast } = useToast()
   const [data, setData] = useState(checklist)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('All')
@@ -163,9 +172,12 @@ export default function TimelineClient({ checklist }: { checklist: ChecklistItem
     setLoading(true)
     try {
       const res = await fetch('/api/checklist')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setData(json.items || [])
-    } catch { /* silent */ }
+    } catch (error) {
+      addToast('Failed to load checklist', 'error')
+    }
     finally { setLoading(false) }
   }, [])
 

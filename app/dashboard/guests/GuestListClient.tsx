@@ -27,16 +27,18 @@ function GuestRow({ guest, rowIndex, onUpdate }: { guest: Guest; rowIndex: numbe
   const save = async () => {
     setLoading(true)
     try {
-      await fetch('/api/guests', {
+      const res = await fetch('/api/guests', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rowIndex, ...data }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update')
       addToast('Guest updated')
       setIsEditing(false)
       onUpdate()
-    } catch {
-      addToast('Failed to update', 'error')
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to update', 'error')
     } finally { setLoading(false) }
   }
 
@@ -44,30 +46,34 @@ function GuestRow({ guest, rowIndex, onUpdate }: { guest: Guest; rowIndex: numbe
     if (!confirm(`Remove ${guest.name}?`)) return
     setLoading(true)
     try {
-      await fetch('/api/guests', {
+      const res = await fetch('/api/guests', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rowIndex }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to delete')
       addToast('Guest removed')
       onUpdate()
-    } catch {
-      addToast('Failed to delete', 'error')
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to delete', 'error')
     } finally { setLoading(false) }
   }
 
   const quickRSVP = async (status: string) => {
     setLoading(true)
     try {
-      await fetch('/api/guests', {
+      const res = await fetch('/api/guests', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rowIndex, rsvpStatus: status }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update')
       addToast(`RSVP updated to ${status}`)
       onUpdate()
-    } catch {
-      addToast('Failed to update', 'error')
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to update', 'error')
     } finally { setLoading(false) }
   }
 
@@ -138,16 +144,18 @@ function AddGuestForm({ onAdd }: { onAdd: () => void }) {
     if (!data.name.trim()) return
     setLoading(true)
     try {
-      await fetch('/api/guests', {
+      const res = await fetch('/api/guests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to add')
       addToast('Guest added')
       setData({ name: '', side: 'Groom', role: '', contactNo: '', invitationSent: 'No', rsvpStatus: 'Pending', pax: '1', notes: '' })
       onAdd()
-    } catch {
-      addToast('Failed to add guest', 'error')
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to add guest', 'error')
     } finally { setLoading(false) }
   }
 
@@ -173,19 +181,23 @@ function AddGuestForm({ onAdd }: { onAdd: () => void }) {
 }
 
 export default function GuestListClient({ guests }: { guests: Guest[] }) {
+  const { addToast } = useToast()
   const [data, setData] = useState(guests)
   const [search, setSearch] = useState('')
   const [filterSide, setFilterSide] = useState('All')
   const [filterRSVP, setFilterRSVP] = useState('All')
   const [loading, setLoading] = useState(false)
 
-  const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/guests')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setData(json.guests || [])
-    } catch { /* silent */ }
+    } catch (error) {
+      addToast('Failed to load guests', 'error')
+    }
     finally { setLoading(false) }
   }, [])
 

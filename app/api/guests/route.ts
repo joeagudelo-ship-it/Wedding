@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSheets, updateCell, appendRow, getSheetId } from '../../lib/sheetsUpdate'
+import { sanitizeString, validateRequired, validateRowIndex, validateEmail, validatePhone } from '../../lib/validation'
+import { apiError, apiSuccess, apiBadRequest } from '../../lib/apiResponse'
 
 export async function GET() {
   try {
@@ -16,31 +18,60 @@ export async function GET() {
       pax: (r[6] || '').trim(),
       notes: (r[7] || '').trim(),
     }))
-    return NextResponse.json({ guests })
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch guests' }, { status: 500 })
+    return apiSuccess({ guests })
+  } catch (error) {
+    return apiError('Failed to fetch guests', error)
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, side, role, contactNo, invitationSent, rsvpStatus, pax, notes } = body
-    if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 })
-    await appendRow('Guest List!A2', [name || '', side || '', role || '', contactNo || '', invitationSent || '', rsvpStatus || '', pax || '1', notes || ''])
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to add guest' }, { status: 500 })
+    const validationError = validateRequired(body, ['name'])
+    if (validationError) return apiBadRequest(validationError)
+
+    const name = sanitizeString(body.name as string, 100)
+    const side = sanitizeString(body.side as string)
+    const role = sanitizeString(body.role as string)
+    const contactNo = sanitizeString(body.contactNo as string, 50)
+    const invitationSent = sanitizeString(body.invitationSent as string)
+    const rsvpStatus = sanitizeString(body.rsvpStatus as string)
+    const pax = sanitizeString(body.pax as string, 10)
+    const notes = sanitizeString(body.notes as string, 500)
+
+    if (contactNo && !validatePhone(contactNo)) {
+      return apiBadRequest('Invalid phone number format')
+    }
+
+    await appendRow('Guest List!A2', [name, side, role, contactNo, invitationSent, rsvpStatus, pax || '1', notes])
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to add guest', error)
   }
 }
 
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    const { rowIndex, name, side, role, contactNo, invitationSent, rsvpStatus, pax, notes } = body
-    if (rowIndex === undefined) return NextResponse.json({ error: 'rowIndex required' }, { status: 400 })
-    const row = rowIndex + 2
+    const rowIndexError = validateRowIndex(body.rowIndex)
+    if (rowIndexError) return apiBadRequest(rowIndexError)
+
+    const row = (body.rowIndex as number) + 2
     const updates: Promise<void>[] = []
+
+    const name = body.name !== undefined ? sanitizeString(body.name as string, 100) : undefined
+    const side = body.side !== undefined ? sanitizeString(body.side as string) : undefined
+    const role = body.role !== undefined ? sanitizeString(body.role as string) : undefined
+    const contactNo = body.contactNo !== undefined ? sanitizeString(body.contactNo as string, 50) : undefined
+    const invitationSent = body.invitationSent !== undefined ? sanitizeString(body.invitationSent as string) : undefined
+    const rsvpStatus = body.rsvpStatus !== undefined ? sanitizeString(body.rsvpStatus as string) : undefined
+    const pax = body.pax !== undefined ? sanitizeString(body.pax as string, 10) : undefined
+    const notes = body.notes !== undefined ? sanitizeString(body.notes as string, 500) : undefined
+
+    if (contactNo && !validatePhone(contactNo)) {
+      return apiBadRequest('Invalid phone number format')
+    }
+
     if (name !== undefined) updates.push(updateCell(`Guest List!A${row}`, name))
     if (side !== undefined) updates.push(updateCell(`Guest List!B${row}`, side))
     if (role !== undefined) updates.push(updateCell(`Guest List!C${row}`, role))
@@ -49,26 +80,28 @@ export async function PUT(request: Request) {
     if (rsvpStatus !== undefined) updates.push(updateCell(`Guest List!F${row}`, rsvpStatus))
     if (pax !== undefined) updates.push(updateCell(`Guest List!G${row}`, pax))
     if (notes !== undefined) updates.push(updateCell(`Guest List!H${row}`, notes))
+
     await Promise.all(updates)
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to update guest' }, { status: 500 })
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to update guest', error)
   }
 }
 
 export async function DELETE(request: Request) {
   try {
     const body = await request.json()
-    const { rowIndex } = body
-    if (rowIndex === undefined) return NextResponse.json({ error: 'rowIndex required' }, { status: 400 })
+    const rowIndexError = validateRowIndex(body.rowIndex)
+    if (rowIndexError) return apiBadRequest(rowIndexError)
+
     const sheetId = await getSheetId('Guest List')
     const { sheets, spreadsheetId } = getSheets()
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
-      requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: rowIndex + 1, endIndex: rowIndex + 2 } } }] },
+      requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: (body.rowIndex as number) + 1, endIndex: (body.rowIndex as number) + 2 } } }] },
     })
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to delete guest' }, { status: 500 })
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to delete guest', error)
   }
 }

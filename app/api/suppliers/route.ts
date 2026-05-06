@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSheets, updateCell, appendRow, getSheetId } from '../../lib/sheetsUpdate'
+import { sanitizeString, validateRequired, validateRowIndex, sanitizeCurrency, validateEmail, validatePhone } from '../../lib/validation'
+import { apiError, apiSuccess, apiBadRequest } from '../../lib/apiResponse'
 
 export async function GET() {
   try {
@@ -21,34 +23,63 @@ export async function GET() {
       contractSigned: (r[8] || '').trim(),
       notes: (r[9] || '').trim(),
     }))
-    return NextResponse.json({ suppliers })
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch suppliers' }, { status: 500 })
+    return apiSuccess({ suppliers })
+  } catch (error) {
+    return apiError('Failed to fetch suppliers', error)
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { category, supplierName, contactPerson, contactNo, totalPrice, downpayment, paid, contractSigned, notes } = body
-    if (!category || !supplierName) return NextResponse.json({ error: 'category and supplierName required' }, { status: 400 })
-    const total = totalPrice || '₱0.00'
-    const down = downpayment || '₱0.00'
-    const bal = `₱${(parseFloat(total.replace(/[₱,]/g, '')) || 0) - (parseFloat(down.replace(/[₱,]/g, '')) || 0)}`
-    await appendRow('Supplier Tracker!A2', [category, supplierName, contactPerson || '', contactNo || '', total, down, bal, paid || 'No', contractSigned || 'No', notes || ''])
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to add supplier' }, { status: 500 })
+    const validationError = validateRequired(body, ['category', 'supplierName'])
+    if (validationError) return apiBadRequest(validationError)
+
+    const category = sanitizeString(body.category as string, 100)
+    const supplierName = sanitizeString(body.supplierName as string, 200)
+    const contactPerson = sanitizeString(body.contactPerson as string, 100)
+    const contactNo = sanitizeString(body.contactNo as string, 50)
+    const totalPrice = sanitizeCurrency(body.totalPrice as string)
+    const downpayment = sanitizeCurrency(body.downpayment as string)
+    const paid = sanitizeString(body.paid as string)
+    const contractSigned = sanitizeString(body.contractSigned as string)
+    const notes = sanitizeString(body.notes as string, 500)
+
+    if (contactNo && !validatePhone(contactNo)) {
+      return apiBadRequest('Invalid phone number format')
+    }
+
+    const bal = `₱${(parseFloat(totalPrice.replace(/[₱,]/g, '')) || 0) - (parseFloat(downpayment.replace(/[₱,]/g, '')) || 0)}`
+    await appendRow('Supplier Tracker!A2', [category, supplierName, contactPerson, contactNo, totalPrice, downpayment, bal, paid || 'No', contractSigned || 'No', notes])
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to add supplier', error)
   }
 }
 
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    const { rowIndex, category, supplierName, contactPerson, contactNo, totalPrice, downpayment, paid, contractSigned, notes } = body
-    if (rowIndex === undefined) return NextResponse.json({ error: 'rowIndex required' }, { status: 400 })
-    const row = rowIndex + 2
+    const rowIndexError = validateRowIndex(body.rowIndex)
+    if (rowIndexError) return apiBadRequest(rowIndexError)
+
+    const row = (body.rowIndex as number) + 2
     const updates: Promise<void>[] = []
+
+    const category = body.category !== undefined ? sanitizeString(body.category as string, 100) : undefined
+    const supplierName = body.supplierName !== undefined ? sanitizeString(body.supplierName as string, 200) : undefined
+    const contactPerson = body.contactPerson !== undefined ? sanitizeString(body.contactPerson as string, 100) : undefined
+    const contactNo = body.contactNo !== undefined ? sanitizeString(body.contactNo as string, 50) : undefined
+    const totalPrice = body.totalPrice !== undefined ? sanitizeCurrency(body.totalPrice as string) : undefined
+    const downpayment = body.downpayment !== undefined ? sanitizeCurrency(body.downpayment as string) : undefined
+    const paid = body.paid !== undefined ? sanitizeString(body.paid as string) : undefined
+    const contractSigned = body.contractSigned !== undefined ? sanitizeString(body.contractSigned as string) : undefined
+    const notes = body.notes !== undefined ? sanitizeString(body.notes as string, 500) : undefined
+
+    if (contactNo && !validatePhone(contactNo)) {
+      return apiBadRequest('Invalid phone number format')
+    }
+
     if (category !== undefined) updates.push(updateCell(`Supplier Tracker!A${row}`, category))
     if (supplierName !== undefined) updates.push(updateCell(`Supplier Tracker!B${row}`, supplierName))
     if (contactPerson !== undefined) updates.push(updateCell(`Supplier Tracker!C${row}`, contactPerson))
@@ -58,6 +89,7 @@ export async function PUT(request: Request) {
     if (paid !== undefined) updates.push(updateCell(`Supplier Tracker!H${row}`, paid))
     if (contractSigned !== undefined) updates.push(updateCell(`Supplier Tracker!I${row}`, contractSigned))
     if (notes !== undefined) updates.push(updateCell(`Supplier Tracker!J${row}`, notes))
+
     if (totalPrice !== undefined || downpayment !== undefined) {
       const { sheets, spreadsheetId } = getSheets()
       const vals = await sheets.spreadsheets.values.get({ spreadsheetId, range: `Supplier Tracker!E${row}:F${row}` })
@@ -65,26 +97,28 @@ export async function PUT(request: Request) {
       const down = parseFloat(((vals.data.values?.[0]?.[1] || '0').replace(/[₱,]/g, ''))) || 0
       updates.push(updateCell(`Supplier Tracker!G${row}`, `₱${(total - down).toFixed(2)}`))
     }
+
     await Promise.all(updates)
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to update supplier' }, { status: 500 })
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to update supplier', error)
   }
 }
 
 export async function DELETE(request: Request) {
   try {
     const body = await request.json()
-    const { rowIndex } = body
-    if (rowIndex === undefined) return NextResponse.json({ error: 'rowIndex required' }, { status: 400 })
+    const rowIndexError = validateRowIndex(body.rowIndex)
+    if (rowIndexError) return apiBadRequest(rowIndexError)
+
     const sheetId = await getSheetId('Supplier Tracker')
     const { sheets, spreadsheetId } = getSheets()
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
-      requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: rowIndex + 1, endIndex: rowIndex + 2 } } }] },
+      requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: (body.rowIndex as number) + 1, endIndex: (body.rowIndex as number) + 2 } } }] },
     })
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to delete supplier' }, { status: 500 })
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to delete supplier', error)
   }
 }

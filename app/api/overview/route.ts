@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { updateCell, getSheets } from '../../lib/sheetsUpdate'
+import { sanitizeString, validateRequired } from '../../lib/validation'
+import { apiError, apiSuccess, apiBadRequest, apiNotFound } from '../../lib/apiResponse'
 
 export async function GET() {
   try {
@@ -21,17 +23,21 @@ export async function GET() {
         entries.push({ key: col0, value: col1 })
       }
     }
-    return NextResponse.json({ entries, entourage })
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch overview' }, { status: 500 })
+    return apiSuccess({ entries, entourage })
+  } catch (error) {
+    return apiError('Failed to fetch overview', error)
   }
 }
 
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    const { key, value } = body
-    if (!key) return NextResponse.json({ error: 'key required' }, { status: 400 })
+    const validationError = validateRequired(body, ['key', 'value'])
+    if (validationError) return apiBadRequest(validationError)
+
+    const key = sanitizeString(body.key as string, 100)
+    const value = sanitizeString(body.value as string, 500)
+
     const { sheets, spreadsheetId } = getSheets()
     const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'Wedding Overview!A1:B50' })
     const rows = res.data.values ?? []
@@ -42,10 +48,11 @@ export async function PUT(request: Request) {
       if (col0 === 'ENTOURAGE') { inEntourage = true; continue }
       if (!inEntourage && col0 === key) { foundRow = i + 1; break }
     }
-    if (foundRow === -1) return NextResponse.json({ error: 'Key not found' }, { status: 404 })
-    await updateCell(`Wedding Overview!B${foundRow}`, value || '')
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to update overview' }, { status: 500 })
+    if (foundRow === -1) return apiNotFound('Key not found')
+
+    await updateCell(`Wedding Overview!B${foundRow}`, value)
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to update overview', error)
   }
 }

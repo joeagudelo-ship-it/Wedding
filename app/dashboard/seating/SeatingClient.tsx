@@ -15,29 +15,37 @@ function TableCard({ table, onUpdate }: { table: TableSeat; onUpdate: () => void
     setLoading(true)
     try {
       const updatedGuests = [...table.guests, newGuest.trim()]
-      await fetch('/api/seating', {
+      const res = await fetch('/api/seating', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableNumber: table.tableNumber, guests: updatedGuests }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to add')
       addToast('Guest assigned')
       setNewGuest('')
       onUpdate()
-    } catch { addToast('Failed to add', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to add', 'error')
+    } finally { setLoading(false) }
   }
 
   const removeGuest = async (index: number) => {
     setLoading(true)
     try {
       const updatedGuests = table.guests.filter((_, i) => i !== index)
-      await fetch('/api/seating', {
+      const res = await fetch('/api/seating', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableNumber: table.tableNumber, guests: updatedGuests }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to remove')
       addToast('Guest removed')
       onUpdate()
-    } catch { addToast('Failed to remove', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to remove', 'error')
+    } finally { setLoading(false) }
   }
 
   return (
@@ -76,15 +84,19 @@ function AddTableForm({ onAdd }: { onAdd: () => void }) {
     if (!tableNum) return
     setLoading(true)
     try {
-      await fetch('/api/seating', {
+      const res = await fetch('/api/seating', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableNumber: parseInt(tableNum) }),
       })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to add table')
       addToast('Table added')
       setTableNum('')
       onAdd()
-    } catch { addToast('Failed to add table', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to add table', 'error')
+    } finally { setLoading(false) }
   }
 
   return (
@@ -99,6 +111,7 @@ function AddTableForm({ onAdd }: { onAdd: () => void }) {
 }
 
 export default function SeatingClient({ tables }: { tables: TableSeat[] }) {
+  const { addToast } = useToast()
   const [data, setData] = useState(tables)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
@@ -107,9 +120,12 @@ export default function SeatingClient({ tables }: { tables: TableSeat[] }) {
     setLoading(true)
     try {
       const res = await fetch('/api/seating')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setData(json.tables || [])
-    } catch { /* silent */ }
+    } catch (error) {
+      addToast('Failed to load seating', 'error')
+    }
     finally { setLoading(false) }
   }, [])
 

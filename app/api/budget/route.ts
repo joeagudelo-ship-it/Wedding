@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSheets, updateCell, appendRow, getSheetId } from '../../lib/sheetsUpdate'
+import { sanitizeString, validateRequired, validateRowIndex, sanitizeCurrency } from '../../lib/validation'
+import { apiError, apiSuccess, apiBadRequest } from '../../lib/apiResponse'
 
 export async function GET() {
   try {
@@ -11,54 +13,67 @@ export async function GET() {
       amount: (r[1] || '').trim(),
       notes: (r[2] || '').trim(),
     }))
-    return NextResponse.json({ lines })
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch budget' }, { status: 500 })
+    return apiSuccess({ lines })
+  } catch (error) {
+    return apiError('Failed to fetch budget', error)
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { item, amount, notes } = body
-    if (!item) return NextResponse.json({ error: 'item required' }, { status: 400 })
-    await appendRow('Budget Summary!A2', [item || '', amount || '', notes || ''])
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to add budget line' }, { status: 500 })
+    const validationError = validateRequired(body, ['item'])
+    if (validationError) return apiBadRequest(validationError)
+
+    const item = sanitizeString(body.item as string, 200)
+    const amount = sanitizeCurrency(body.amount as string)
+    const notes = sanitizeString(body.notes as string, 500)
+
+    await appendRow('Budget Summary!A2', [item, amount, notes])
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to add budget line', error)
   }
 }
 
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    const { rowIndex, item, amount, notes } = body
-    if (rowIndex === undefined) return NextResponse.json({ error: 'rowIndex required' }, { status: 400 })
-    const row = rowIndex + 2
+    const rowIndexError = validateRowIndex(body.rowIndex)
+    if (rowIndexError) return apiBadRequest(rowIndexError)
+
+    const row = (body.rowIndex as number) + 2
     const updates: Promise<void>[] = []
+
+    const item = body.item !== undefined ? sanitizeString(body.item as string, 200) : undefined
+    const amount = body.amount !== undefined ? sanitizeCurrency(body.amount as string) : undefined
+    const notes = body.notes !== undefined ? sanitizeString(body.notes as string, 500) : undefined
+
     if (item !== undefined) updates.push(updateCell(`Budget Summary!A${row}`, item))
     if (amount !== undefined) updates.push(updateCell(`Budget Summary!B${row}`, amount))
     if (notes !== undefined) updates.push(updateCell(`Budget Summary!C${row}`, notes))
+
     await Promise.all(updates)
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to update budget line' }, { status: 500 })
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to update budget line', error)
   }
 }
 
 export async function DELETE(request: Request) {
   try {
     const body = await request.json()
-    const { rowIndex } = body
-    if (rowIndex === undefined) return NextResponse.json({ error: 'rowIndex required' }, { status: 400 })
+    const rowIndexError = validateRowIndex(body.rowIndex)
+    if (rowIndexError) return apiBadRequest(rowIndexError)
+
     const sheetId = await getSheetId('Budget Summary')
     const { sheets, spreadsheetId } = getSheets()
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
-      requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: rowIndex + 1, endIndex: rowIndex + 2 } } }] },
+      requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: (body.rowIndex as number) + 1, endIndex: (body.rowIndex as number) + 2 } } }] },
     })
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to delete budget line' }, { status: 500 })
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to delete budget line', error)
   }
 }

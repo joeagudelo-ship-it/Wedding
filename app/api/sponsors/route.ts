@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSheets, updateCell, appendRow, getSheetId } from '../../lib/sheetsUpdate'
+import { sanitizeString, validateRequired, validateRowIndex } from '../../lib/validation'
+import { apiError, apiSuccess, apiBadRequest } from '../../lib/apiResponse'
 
 export async function GET() {
   try {
@@ -11,54 +13,67 @@ export async function GET() {
       side: (r[1] || '').trim(),
       role: (r[2] || '').trim(),
     }))
-    return NextResponse.json({ sponsors })
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch sponsors' }, { status: 500 })
+    return apiSuccess({ sponsors })
+  } catch (error) {
+    return apiError('Failed to fetch sponsors', error)
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, side, role } = body
-    if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 })
-    await appendRow('Principal Sponsors!A2', [name || '', side || '', role || ''])
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to add sponsor' }, { status: 500 })
+    const validationError = validateRequired(body, ['name'])
+    if (validationError) return apiBadRequest(validationError)
+
+    const name = sanitizeString(body.name as string, 100)
+    const side = sanitizeString(body.side as string)
+    const role = sanitizeString(body.role as string)
+
+    await appendRow('Principal Sponsors!A2', [name, side, role])
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to add sponsor', error)
   }
 }
 
 export async function PUT(request: Request) {
   try {
     const body = await request.json()
-    const { rowIndex, name, side, role } = body
-    if (rowIndex === undefined) return NextResponse.json({ error: 'rowIndex required' }, { status: 400 })
-    const row = rowIndex + 2
+    const rowIndexError = validateRowIndex(body.rowIndex)
+    if (rowIndexError) return apiBadRequest(rowIndexError)
+
+    const row = (body.rowIndex as number) + 2
     const updates: Promise<void>[] = []
+
+    const name = body.name !== undefined ? sanitizeString(body.name as string, 100) : undefined
+    const side = body.side !== undefined ? sanitizeString(body.side as string) : undefined
+    const role = body.role !== undefined ? sanitizeString(body.role as string) : undefined
+
     if (name !== undefined) updates.push(updateCell(`Principal Sponsors!A${row}`, name))
     if (side !== undefined) updates.push(updateCell(`Principal Sponsors!B${row}`, side))
     if (role !== undefined) updates.push(updateCell(`Principal Sponsors!C${row}`, role))
+
     await Promise.all(updates)
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to update sponsor' }, { status: 500 })
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to update sponsor', error)
   }
 }
 
 export async function DELETE(request: Request) {
   try {
     const body = await request.json()
-    const { rowIndex } = body
-    if (rowIndex === undefined) return NextResponse.json({ error: 'rowIndex required' }, { status: 400 })
+    const rowIndexError = validateRowIndex(body.rowIndex)
+    if (rowIndexError) return apiBadRequest(rowIndexError)
+
     const sheetId = await getSheetId('Principal Sponsors')
     const { sheets, spreadsheetId } = getSheets()
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
-      requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: rowIndex + 1, endIndex: rowIndex + 2 } } }] },
+      requestBody: { requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: (body.rowIndex as number) + 1, endIndex: (body.rowIndex as number) + 2 } } }] },
     })
-    return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: 'Failed to delete sponsor' }, { status: 500 })
+    return apiSuccess({ success: true })
+  } catch (error) {
+    return apiError('Failed to delete sponsor', error)
   }
 }

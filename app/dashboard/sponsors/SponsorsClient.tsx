@@ -16,18 +16,26 @@ function EditableCell({ value, rowIndex, field, side, role, onUpdate }: { value:
       if (!draft.trim()) { setIsEditing(false); return }
       setLoading(true)
       try {
-        await fetch('/api/sponsors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: draft.trim(), side, role }) })
+        const res = await fetch('/api/sponsors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: draft.trim(), side, role }) })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'Failed to add')
         addToast('Sponsor added')
         onUpdate()
-      } catch { addToast('Failed to add', 'error') } finally { setLoading(false) }
+      } catch (error) {
+        addToast(error instanceof Error ? error.message : 'Failed to add', 'error')
+      } finally { setLoading(false) }
       return
     }
     setLoading(true)
     try {
-      await fetch('/api/sponsors', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rowIndex, [field]: draft.trim() || value }) })
+      const res = await fetch('/api/sponsors', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rowIndex, [field]: draft.trim() || value }) })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to update')
       addToast('Updated')
       onUpdate()
-    } catch { addToast('Failed to update', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to update', 'error')
+    } finally { setLoading(false) }
     setIsEditing(false)
   }
 
@@ -36,10 +44,14 @@ function EditableCell({ value, rowIndex, field, side, role, onUpdate }: { value:
     if (!confirm(`Remove ${value}?`)) return
     setLoading(true)
     try {
-      await fetch('/api/sponsors', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rowIndex }) })
+      const res = await fetch('/api/sponsors', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rowIndex }) })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to delete')
       addToast('Removed')
       onUpdate()
-    } catch { addToast('Failed to delete', 'error') } finally { setLoading(false) }
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to delete', 'error')
+    } finally { setLoading(false) }
   }
 
   if (isEditing) {
@@ -65,6 +77,7 @@ function EditableCell({ value, rowIndex, field, side, role, onUpdate }: { value:
 }
 
 export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
+  const { addToast } = useToast()
   const [data, setData] = useState(sponsors)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
@@ -73,9 +86,12 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
     setLoading(true)
     try {
       const res = await fetch('/api/sponsors')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       setData(json.sponsors || [])
-    } catch { /* silent */ }
+    } catch (error) {
+      addToast('Failed to load sponsors', 'error')
+    }
     finally { setLoading(false) }
   }, [])
 

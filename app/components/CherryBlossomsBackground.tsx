@@ -91,14 +91,12 @@ function CherryTreeSVG({ tree }: { tree: CherryTree }) {
 
 function FallingPetal({ petal, scrollVelocity }: { petal: Petal; scrollVelocity: number }) {
   const absVelocity = Math.min(Math.abs(scrollVelocity), 5)
-
-  const fallDuration = petal.duration
   const extraDrift = absVelocity * 0.05
 
   const style: React.CSSProperties = useMemo(() => ({
     ['--petal-x' as string]: `${petal.x}vw`,
     ['--petal-size' as string]: `${petal.size}px`,
-    ['--petal-duration' as string]: `${fallDuration}s`,
+    ['--petal-duration' as string]: `${petal.duration}s`,
     ['--petal-delay' as string]: `${petal.delay}s`,
     ['--petal-opacity' as string]: petal.opacity,
     ['--petal-rotation' as string]: `${petal.rotation}deg`,
@@ -112,8 +110,8 @@ function FallingPetal({ petal, scrollVelocity }: { petal: Petal; scrollVelocity:
     opacity: petal.opacity,
     pointerEvents: 'none' as const,
     zIndex: 1,
-    animation: `petalFall ${fallDuration}s linear ${petal.delay}s infinite, petalWobble ${2 + Math.random() * 3}s ease-in-out ${petal.delay}s infinite, petalSpin ${fallDuration * 0.8}s linear ${petal.delay}s infinite`,
-  }), [petal, fallDuration, extraDrift, absVelocity])
+    animation: `petalFall ${petal.duration}s linear ${petal.delay}s infinite, petalWobble ${2 + Math.random() * 3}s ease-in-out ${petal.delay}s infinite, petalSpin ${petal.duration * 0.8}s linear ${petal.delay}s infinite`,
+  }), [petal, extraDrift])
 
   return (
     <div style={style}>
@@ -195,7 +193,7 @@ export function CherryBlossomsBackground() {
   if (isReducedMotion) return null
 
   return (
-    <div key="blossoms-active" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 1, overflow: 'hidden' }}>
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 1, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, transform: `translateY(${scrollY * 0.15}px)`, willChange: 'transform' }}>
         {trees.filter(t => t.layer === 'far').map((tree, i) => (<CherryTreeSVG key={`far-${i}`} tree={tree} />))}
       </div>

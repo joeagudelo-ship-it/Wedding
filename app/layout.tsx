@@ -18,6 +18,20 @@ const navLinks = [
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              try {
+                var stored = localStorage.getItem('wedding-theme');
+                if (stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.documentElement.setAttribute('data-theme', 'dark');
+                }
+              } catch(e) {}
+            })();
+          `
+        }} />
+      </head>
       <body suppressHydrationWarning>
         <ThemeProvider>
           <CherryBlossomsBackground />

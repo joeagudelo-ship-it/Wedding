@@ -13,7 +13,6 @@ const ThemeContext = createContext<ThemeContextType>({ theme: 'light', toggleThe
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light')
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('wedding-theme') as Theme | null
@@ -22,21 +21,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setTheme('dark')
     }
-    setMounted(true)
   }, [])
 
   useEffect(() => {
-    if (mounted) {
-      document.documentElement.setAttribute('data-theme', theme)
-      localStorage.setItem('wedding-theme', theme)
-    }
-  }, [theme, mounted])
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('wedding-theme', theme)
+  }, [theme])
 
   const toggleTheme = useCallback(() => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light')
   }, [])
-
-  if (!mounted) return null
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

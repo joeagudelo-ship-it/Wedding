@@ -95,15 +95,15 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
 
       <div className="grid-3">
         <div className="card card-glow card-accent">
-          <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.08em' }}>Total Sponsors</div>
+          <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Total Sponsors</div>
           <div className="text-lg font-semibold">{data.length}</div>
         </div>
-        <div className="card" style={{ borderTop: '2px solid var(--sakura-red)' }}>
-          <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.08em' }}>Total Pairs</div>
+        <div className="card" style={{ borderTop: '2px solid var(--accent)' }}>
+          <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Total Pairs</div>
           <div className="text-lg font-semibold">{pairCount}</div>
         </div>
         <div className="card" style={{ borderTop: '2px solid var(--info)' }}>
-          <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.08em' }}>Ninongs / Ninangs</div>
+          <div className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Ninongs / Ninangs</div>
           <div className="text-lg font-semibold">{totalNinong} / {totalNinang}</div>
         </div>
       </div>
@@ -112,7 +112,7 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
         <input className="input-field" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search sponsors..." style={{ width: 250, marginBottom: 20 }} />
 
         {loading ? (
-          <div className="text-center py-8" style={{ color: 'var(--brown-muted)' }}>Loading...</div>
+          <div className="text-center py-8" style={{ color: 'var(--text-muted)' }}>Loading...</div>
         ) : (
           <div className="table-container">
             <table>
@@ -136,7 +136,7 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
                     <tr key={i}>
                       <td>
                         <div className="flex items-center justify-center">
-                          <span className="w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-semibold" style={{ background: 'linear-gradient(135deg, var(--sakura-red), var(--sakura))', color: '#fff' }}>
+                          <span className="w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-semibold" style={{ background: 'linear-gradient(135deg, var(--accent), var(--pink))', color: '#fff' }}>
                             {i + 1}
                           </span>
                         </div>

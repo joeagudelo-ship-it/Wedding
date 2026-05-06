@@ -54,13 +54,13 @@ function generateTrees(width: number): CherryTree[] {
 }
 
 function CherryTreeSVG({ tree }: { tree: CherryTree }) {
-  const trunkColor = tree.layer === 'near' ? '#8B6B67' : tree.layer === 'mid' ? '#A89090' : '#C5ACAE'
+  const trunkColor = tree.layer === 'near' ? '#bf8065' : tree.layer === 'mid' ? '#a87060' : '#c59080'
   const blossomColors = [
-    tree.layer === 'near' ? 'rgba(213, 91, 89, 0.25)' : 'rgba(213, 91, 89, 0.12)',
-    tree.layer === 'near' ? 'rgba(230, 173, 176, 0.3)' : 'rgba(230, 173, 176, 0.15)',
-    tree.layer === 'near' ? 'rgba(242, 205, 211, 0.35)' : 'rgba(242, 205, 211, 0.18)',
-    tree.layer === 'near' ? 'rgba(250, 240, 242, 0.4)' : 'rgba(250, 240, 242, 0.2)',
-    tree.layer === 'near' ? 'rgba(213, 91, 89, 0.15)' : 'rgba(213, 91, 89, 0.08)',
+    tree.layer === 'near' ? 'rgba(144,31,59,0.25)' : 'rgba(255,146,196,0.12)',
+    tree.layer === 'near' ? 'rgba(191,128,101,0.3)' : 'rgba(191,128,101,0.15)',
+    tree.layer === 'near' ? 'rgba(251,183,221,0.35)' : 'rgba(251,183,221,0.18)',
+    tree.layer === 'near' ? 'rgba(255,146,196,0.4)' : 'rgba(255,146,196,0.2)',
+    tree.layer === 'near' ? 'rgba(144,31,59,0.15)' : 'rgba(144,31,59,0.08)',
   ]
   const transform = tree.flip ? `scale(-${tree.scale}, ${tree.scale})` : `scale(${tree.scale}, ${tree.scale})`
   return (
@@ -121,9 +121,9 @@ function FallingPetal({ petal, scrollVelocity }: { petal: Petal; scrollVelocity:
   return (
     <div style={style}>
       <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-        <path d="M12 2C12 2 8 6 8 10C8 12.2 9.8 14 12 14C14.2 14 16 12.2 16 10C16 6 12 2 12 2Z" fill="#F2CDD3" stroke="#D55B59" strokeWidth="0.3" />
-        <path d="M12 2C12 2 16 6 16 10C16 12.2 14.2 14 12 14C9.8 14 8 12.2 8 10C8 6 12 2 12 2Z" fill="#FAF0F2" stroke="#F2CDD3" strokeWidth="0.3" />
-        <ellipse cx="12" cy="10" rx="1.5" ry="2" fill="#D55B59" />
+        <path d="M12 2C12 2 8 6 8 10C8 12.2 9.8 14 12 14C14.2 14 16 12.2 16 10C16 6 12 2 12 2Z" fill="#fbb7dd" stroke="#ff92c4" strokeWidth="0.3" />
+        <path d="M12 2C12 2 16 6 16 10C16 12.2 14.2 14 12 14C9.8 14 8 12.2 8 10C8 6 12 2 12 2Z" fill="#fce8ee" stroke="#fbb7dd" strokeWidth="0.3" />
+        <ellipse cx="12" cy="10" rx="1.5" ry="2" fill="#ff92c4" />
       </svg>
     </div>
   )

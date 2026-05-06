@@ -79,14 +79,12 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
     finally { setLoading(false) }
   }, [])
 
-  const groomNinongs = data.filter(s => s.side === 'Groom' && s.role === 'Ninong')
-  const groomNinangs = data.filter(s => s.side === 'Groom' && s.role === 'Ninang')
-  const brideNinongs = data.filter(s => s.side === 'Bride' && s.role === 'Ninong')
-  const brideNinangs = data.filter(s => s.side === 'Bride' && s.role === 'Ninang')
+  const ninongs = data.filter(s => s.role === 'Ninong')
+  const ninangs = data.filter(s => s.role === 'Ninang')
 
-  const totalNinong = groomNinongs.length + brideNinongs.length
-  const totalNinang = groomNinangs.length + brideNinangs.length
-  const pairCount = Math.max(groomNinongs.length, groomNinangs.length, brideNinongs.length, brideNinangs.length, 1)
+  const totalNinong = ninongs.length
+  const totalNinang = ninangs.length
+  const pairCount = Math.max(totalNinong, totalNinang, 1)
 
   return (
     <div className="fade-in space-y-6">
@@ -120,47 +118,19 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
             <table>
               <thead>
                 <tr>
-                  <th rowSpan={2} style={{ width: 70, verticalAlign: 'middle' }}>Pair #</th>
-                  <th colSpan={2} style={{ textAlign: 'center' }}>
+                  <th style={{ width: 70 }}>Pair #</th>
+                  <th>
                     <span className="badge badge-neutral">Ninong</span>
                   </th>
-                  <th colSpan={2} style={{ textAlign: 'center' }}>
+                  <th>
                     <span className="badge badge-info">Ninang</span>
-                  </th>
-                </tr>
-                <tr>
-                  <th style={{ width: 160 }}>
-                    <div className="flex items-center gap-1.5 justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--sakura-red)' }} />
-                      Groom Side
-                    </div>
-                  </th>
-                  <th style={{ width: 160 }}>
-                    <div className="flex items-center gap-1.5 justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--info)' }} />
-                      Bride Side
-                    </div>
-                  </th>
-                  <th style={{ width: 160 }}>
-                    <div className="flex items-center gap-1.5 justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--sakura-red)' }} />
-                      Groom Side
-                    </div>
-                  </th>
-                  <th style={{ width: 160 }}>
-                    <div className="flex items-center gap-1.5 justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--info)' }} />
-                      Bride Side
-                    </div>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {Array.from({ length: pairCount }, (_, i) => {
-                  const gn = groomNinongs[i] || null
-                  const bn = brideNinongs[i] || null
-                  const ga = groomNinangs[i] || null
-                  const ba = brideNinangs[i] || null
+                  const ninong = ninongs[i] || null
+                  const ninang = ninangs[i] || null
 
                   return (
                     <tr key={i}>
@@ -173,40 +143,20 @@ export default function SponsorsClient({ sponsors }: { sponsors: Sponsor[] }) {
                       </td>
                       <td>
                         <EditableCell
-                          value={gn?.name || ''}
-                          rowIndex={gn ? data.indexOf(gn) : null}
+                          value={ninong?.name || ''}
+                          rowIndex={ninong ? data.indexOf(ninong) : null}
                           field="name"
-                          side="Groom"
+                          side={ninong?.side || 'Groom'}
                           role="Ninong"
                           onUpdate={fetchData}
                         />
                       </td>
                       <td>
                         <EditableCell
-                          value={bn?.name || ''}
-                          rowIndex={bn ? data.indexOf(bn) : null}
+                          value={ninang?.name || ''}
+                          rowIndex={ninang ? data.indexOf(ninang) : null}
                           field="name"
-                          side="Bride"
-                          role="Ninong"
-                          onUpdate={fetchData}
-                        />
-                      </td>
-                      <td>
-                        <EditableCell
-                          value={ga?.name || ''}
-                          rowIndex={ga ? data.indexOf(ga) : null}
-                          field="name"
-                          side="Groom"
-                          role="Ninang"
-                          onUpdate={fetchData}
-                        />
-                      </td>
-                      <td>
-                        <EditableCell
-                          value={ba?.name || ''}
-                          rowIndex={ba ? data.indexOf(ba) : null}
-                          field="name"
-                          side="Bride"
+                          side={ninang?.side || 'Bride'}
                           role="Ninang"
                           onUpdate={fetchData}
                         />

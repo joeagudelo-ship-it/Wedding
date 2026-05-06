@@ -69,29 +69,28 @@ function SupplierRow({ supplier, rowIndex, onUpdate }: { supplier: Supplier; row
   if (isEditing) {
     return (
       <tr style={{ background: 'var(--sakura-ultra)' }}>
-        <td><input className="input-field" value={data.category} onChange={e => setData(d => ({ ...d, category: e.target.value }))} style={{ width: 100 }} /></td>
-        <td><input className="input-field" value={data.supplierName} onChange={e => setData(d => ({ ...d, supplierName: e.target.value }))} style={{ width: 140 }} /></td>
-        <td><input className="input-field" value={data.contactPerson} onChange={e => setData(d => ({ ...d, contactPerson: e.target.value }))} style={{ width: 100 }} /></td>
-        <td><input className="input-field" value={data.contactNo} onChange={e => setData(d => ({ ...d, contactNo: e.target.value }))} style={{ width: 110 }} /></td>
-        <td><input className="input-field" value={data.totalPrice} onChange={e => setData(d => ({ ...d, totalPrice: e.target.value }))} style={{ width: 100 }} /></td>
-        <td><input className="input-field" value={data.downpayment} onChange={e => setData(d => ({ ...d, downpayment: e.target.value }))} style={{ width: 100 }} /></td>
+        <td><input className="input-field" value={data.category} onChange={e => setData(d => ({ ...d, category: e.target.value }))} style={{ width: 80 }} /></td>
+        <td><input className="input-field" value={data.supplierName} onChange={e => setData(d => ({ ...d, supplierName: e.target.value }))} style={{ width: 120 }} /></td>
+        <td><input className="input-field" value={data.contactPerson} onChange={e => setData(d => ({ ...d, contactPerson: e.target.value }))} style={{ width: 90 }} /></td>
+        <td><input className="input-field" value={data.totalPrice} onChange={e => setData(d => ({ ...d, totalPrice: e.target.value }))} style={{ width: 80 }} /></td>
+        <td><input className="input-field" value={data.downpayment} onChange={e => setData(d => ({ ...d, downpayment: e.target.value }))} style={{ width: 80 }} /></td>
         <td className="text-sm peso" style={{ color: balance > 0 ? 'var(--warning)' : 'var(--success)' }}>{formatMoney(balance)}</td>
         <td>
-          <select className="input-field" value={data.paid} onChange={e => setData(d => ({ ...d, paid: e.target.value }))} style={{ width: 100 }}>
+          <select className="input-field" value={data.paid} onChange={e => setData(d => ({ ...d, paid: e.target.value }))} style={{ width: 85 }}>
             <option value="No">No</option><option value="Partial">Partial</option><option value="Paid">Paid</option><option value="Sponsored">Sponsored</option><option value="N/A">N/A</option>
           </select>
         </td>
         <td>
-          <select className="input-field" value={data.contractSigned} onChange={e => setData(d => ({ ...d, contractSigned: e.target.value }))} style={{ width: 80 }}>
+          <select className="input-field" value={data.contractSigned} onChange={e => setData(d => ({ ...d, contractSigned: e.target.value }))} style={{ width: 65 }}>
             <option value="No">No</option><option value="Yes">Yes</option><option value="N/A">N/A</option>
           </select>
         </td>
-        <td><input className="input-field" value={data.notes} onChange={e => setData(d => ({ ...d, notes: e.target.value }))} style={{ width: 140 }} /></td>
+        <td><input className="input-field" value={data.notes} onChange={e => setData(d => ({ ...d, notes: e.target.value }))} style={{ width: 120 }} /></td>
         <td>
-          <div className="flex gap-1.5">
-            <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Save</button>
-            <button className="btn btn-secondary" onClick={cancel} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Cancel</button>
-            <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 8px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
+          <div className="flex gap-1">
+            <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Save</button>
+            <button className="btn btn-secondary" onClick={cancel} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Cancel</button>
+            <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 6px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
           </div>
         </td>
       </tr>
@@ -101,19 +100,22 @@ function SupplierRow({ supplier, rowIndex, onUpdate }: { supplier: Supplier; row
   return (
     <tr style={{ opacity: loading ? 0.5 : 1 }}>
       <td><span className="badge badge-neutral">{supplier.category}</span></td>
-      <td className="font-medium text-sm" style={{ color: 'var(--brown-deep)' }}>{supplier.supplierName}</td>
-      <td className="text-sm">{supplier.contactPerson}</td>
+      <td className="font-medium text-sm" style={{ color: 'var(--brown-deep)' }} title={supplier.supplierName}>
+        <span className="truncate block" style={{ maxWidth: 130 }}>{supplier.supplierName}</span>
+      </td>
+      <td className="text-sm" title={supplier.contactPerson || supplier.contactNo}>
+        <span className="truncate block" style={{ maxWidth: 100 }}>{supplier.contactPerson || supplier.contactNo || '—'}</span>
+      </td>
       <td className="text-sm font-medium peso">{supplier.totalPrice}</td>
       <td className="text-sm peso">{supplier.downpayment}</td>
       <td className="text-sm font-medium peso" style={{ color: balance > 0 ? 'var(--warning)' : 'var(--success)' }}>{formatMoney(balance)}</td>
-      <td><div style={{ width: 70 }}><div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width: `${pct}%` }} /></div><div className="text-xs mt-1 text-center" style={{ color: 'var(--brown-muted)' }}>{pct}%</div></div></td>
       <td><StatusBadge status={supplier.paid} /></td>
       <td><StatusBadge status={supplier.contractSigned} /></td>
       <td className="text-sm max-w-xs truncate" style={{ color: 'var(--brown-muted)' }} title={supplier.notes}>{supplier.notes}</td>
       <td>
         <div className="flex gap-1">
-          <button className="btn btn-secondary" onClick={() => setIsEditing(true)} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Edit</button>
-          <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 8px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
+          <button className="btn btn-secondary" onClick={() => setIsEditing(true)} disabled={loading} style={{ padding: '4px 6px', fontSize: 11 }}>Edit</button>
+          <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 6px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
         </div>
       </td>
     </tr>
@@ -172,10 +174,10 @@ function BudgetLineRow({ line, rowIndex, onUpdate }: { line: BudgetLine; rowInde
   if (isEditing) {
     return (
       <div className="card-subtle" style={{ opacity: loading ? 0.5 : 1 }}>
-        <div className="flex gap-2 items-center">
-          <input className="input-field" value={item} onChange={e => setItem(e.target.value)} style={{ flex: 1 }} />
-          <input className="input-field" value={amount} onChange={e => setAmount(e.target.value)} style={{ width: 120 }} />
-          <input className="input-field" value={notes} onChange={e => setNotes(e.target.value)} style={{ width: 150 }} placeholder="Notes..." />
+        <div className="flex gap-2 items-center flex-wrap">
+          <input className="input-field" value={item} onChange={e => setItem(e.target.value)} style={{ flex: 1, minWidth: 150 }} />
+          <input className="input-field" value={amount} onChange={e => setAmount(e.target.value)} style={{ width: 110 }} />
+          <input className="input-field" value={notes} onChange={e => setNotes(e.target.value)} style={{ width: 140 }} placeholder="Notes..." />
           <button className="btn btn-primary" onClick={save} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Save</button>
           <button className="btn btn-secondary" onClick={cancel} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Cancel</button>
         </div>
@@ -185,13 +187,13 @@ function BudgetLineRow({ line, rowIndex, onUpdate }: { line: BudgetLine; rowInde
 
   return (
     <div className="card-subtle" style={{ opacity: loading ? 0.5 : 1 }}>
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-xs uppercase tracking-wider mb-1" style={{ color: 'var(--brown-muted)', letterSpacing: '0.06em' }}>{item}</div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-xs uppercase tracking-wider mb-1 truncate" style={{ color: 'var(--brown-muted)', letterSpacing: '0.06em' }} title={item}>{item}</div>
           <div className="text-lg font-semibold peso" style={{ color: valueColor }}>{amount}</div>
-          {notes && <div className="text-xs mt-1" style={{ color: 'var(--brown-muted)' }}>{notes}</div>}
+          {notes && <div className="text-xs mt-1 truncate" style={{ color: 'var(--brown-muted)' }} title={notes}>{notes}</div>}
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-shrink-0">
           <button className="btn btn-secondary" onClick={() => setIsEditing(true)} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Edit</button>
           <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 8px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
         </div>
@@ -227,17 +229,17 @@ function AddBudgetForm({ onAdd }: { onAdd: () => void }) {
 
   return (
     <form onSubmit={submit} className="flex gap-2 items-end flex-wrap">
-      <div style={{ flex: 1, minWidth: 200 }}>
+      <div style={{ flex: 1, minWidth: 160 }}>
         <label className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Item</label>
         <input className="input-field" value={item} onChange={e => setItem(e.target.value)} placeholder="e.g. Venue, Catering..." />
       </div>
       <div>
         <label className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Amount</label>
-        <input className="input-field" value={amount} onChange={e => setAmount(e.target.value)} style={{ width: 120 }} />
+        <input className="input-field" value={amount} onChange={e => setAmount(e.target.value)} style={{ width: 110 }} />
       </div>
       <div>
         <label className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Notes</label>
-        <input className="input-field" value={notes} onChange={e => setNotes(e.target.value)} style={{ width: 150 }} placeholder="Optional..." />
+        <input className="input-field" value={notes} onChange={e => setNotes(e.target.value)} style={{ width: 140 }} placeholder="Optional..." />
       </div>
       <button className="btn btn-primary" disabled={loading || !item.trim()} style={{ height: 36 }}>{loading ? 'Adding...' : 'Add Line'}</button>
     </form>
@@ -315,10 +317,10 @@ export default function BudgetClient({ suppliers, budget }: { suppliers: Supplie
 
       <div className="card-elevated">
         <h3 className="text-sm uppercase tracking-wider mb-1" style={{ color: 'var(--brown-muted)', letterSpacing: '0.08em', fontWeight: 500 }}>Supplier Payments</h3>
-        <p className="text-xs mb-4" style={{ color: 'var(--brown-muted)' }}>Click "Edit" to modify any field — category, contact, pricing, contract, and notes</p>
+        <p className="text-xs mb-4" style={{ color: 'var(--brown-muted)' }}>Click "Edit" to modify any field</p>
         <div className="table-container">
           <table>
-            <thead><tr><th>Category</th><th>Supplier</th><th>Contact Person</th><th>Total</th><th>Paid</th><th>Balance</th><th></th><th>Status</th><th>Contract</th><th>Notes</th><th style={{ width: 180 }}>Actions</th></tr></thead>
+            <thead><tr><th>Category</th><th>Supplier</th><th>Contact</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Contract</th><th>Notes</th><th style={{ width: 130 }}>Actions</th></tr></thead>
             <tbody>{suppliersData.map((s, i) => <SupplierRow key={i} supplier={s} rowIndex={i} onUpdate={fetchSuppliers} />)}</tbody>
           </table>
         </div>

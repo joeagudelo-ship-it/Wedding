@@ -82,30 +82,30 @@ function GuestRow({ guest, rowIndex, onUpdate }: { guest: Guest; rowIndex: numbe
   if (isEditing) {
     return (
       <tr>
-        <td className="text-sm font-medium"><input className="input-field" value={data.name} onChange={e => setData(d => ({ ...d, name: e.target.value }))} style={{ width: 160 }} /></td>
+        <td className="text-sm font-medium"><input className="input-field" value={data.name} onChange={e => setData(d => ({ ...d, name: e.target.value }))} style={{ width: 130 }} /></td>
         <td>
-          <select className="input-field" value={data.side} onChange={e => setData(d => ({ ...d, side: e.target.value }))} style={{ width: 100 }}>
+          <select className="input-field" value={data.side} onChange={e => setData(d => ({ ...d, side: e.target.value }))} style={{ width: 85 }}>
             <option value="">—</option><option value="Groom">Groom</option><option value="Bride">Bride</option><option value="Friends">Friends</option>
           </select>
         </td>
-        <td><input className="input-field" value={data.role} onChange={e => setData(d => ({ ...d, role: e.target.value }))} placeholder="Role" style={{ width: 100 }} /></td>
-        <td><input className="input-field" value={data.contactNo} onChange={e => setData(d => ({ ...d, contactNo: e.target.value }))} style={{ width: 120 }} /></td>
+        <td><input className="input-field" value={data.role} onChange={e => setData(d => ({ ...d, role: e.target.value }))} placeholder="Role" style={{ width: 80 }} /></td>
+        <td><input className="input-field" value={data.contactNo} onChange={e => setData(d => ({ ...d, contactNo: e.target.value }))} style={{ width: 100 }} /></td>
         <td>
-          <select className="input-field" value={data.invitationSent} onChange={e => setData(d => ({ ...d, invitationSent: e.target.value }))} style={{ width: 100 }}>
+          <select className="input-field" value={data.invitationSent} onChange={e => setData(d => ({ ...d, invitationSent: e.target.value }))} style={{ width: 85 }}>
             <option value="">—</option><option value="Yes">Yes</option><option value="No">No</option>
           </select>
         </td>
         <td>
-          <select className="input-field" value={data.rsvpStatus} onChange={e => setData(d => ({ ...d, rsvpStatus: e.target.value }))} style={{ width: 120 }}>
+          <select className="input-field" value={data.rsvpStatus} onChange={e => setData(d => ({ ...d, rsvpStatus: e.target.value }))} style={{ width: 100 }}>
             <option value="">—</option><option value="Confirmed">Confirmed</option><option value="Pending">Pending</option><option value="Declined">Declined</option><option value="Awaiting">Awaiting</option>
           </select>
         </td>
-        <td><input className="input-field" type="number" value={data.pax || '1'} onChange={e => setData(d => ({ ...d, pax: e.target.value }))} style={{ width: 60, textAlign: 'center' }} /></td>
-        <td><input className="input-field" value={data.notes} onChange={e => setData(d => ({ ...d, notes: e.target.value }))} style={{ width: 140 }} /></td>
+        <td><input className="input-field" type="number" value={data.pax || '1'} onChange={e => setData(d => ({ ...d, pax: e.target.value }))} style={{ width: 50, textAlign: 'center' }} /></td>
+        <td><input className="input-field" value={data.notes} onChange={e => setData(d => ({ ...d, notes: e.target.value }))} style={{ width: 120 }} /></td>
         <td>
-          <div className="flex gap-1.5">
-            <button className="btn btn-primary" onClick={save} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Save</button>
-            <button className="btn btn-secondary" onClick={cancel} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Cancel</button>
+          <div className="flex gap-1">
+            <button className="btn btn-primary" onClick={save} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Save</button>
+            <button className="btn btn-secondary" onClick={cancel} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Cancel</button>
           </div>
         </td>
       </tr>
@@ -114,7 +114,9 @@ function GuestRow({ guest, rowIndex, onUpdate }: { guest: Guest; rowIndex: numbe
 
   return (
     <tr style={{ opacity: loading ? 0.5 : 1 }}>
-      <td className="text-sm font-medium" style={{ color: 'var(--brown-deep)' }}>{guest.name}</td>
+      <td className="text-sm font-medium" style={{ color: 'var(--brown-deep)' }} title={guest.name}>
+        <span className="truncate block" style={{ maxWidth: 140 }}>{guest.name}</span>
+      </td>
       <td><StatusBadge status={guest.side} variant="side" /></td>
       <td className="text-sm" style={{ color: 'var(--brown-muted)' }}>{guest.role}</td>
       <td className="text-sm">{guest.contactNo}</td>
@@ -250,14 +252,14 @@ export default function GuestListClient({ guests }: { guests: Guest[] }) {
 
       <div className="card-elevated">
         <div className="flex gap-3 items-center mb-4 flex-wrap">
-          <input className="input-field" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search guests..." style={{ width: 250 }} />
-          <select className="input-field" value={filterSide} onChange={e => setFilterSide(e.target.value)} style={{ width: 120 }}>
+          <input className="input-field" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search guests..." style={{ width: 200 }} />
+          <select className="input-field" value={filterSide} onChange={e => setFilterSide(e.target.value)} style={{ width: 110 }}>
             <option value="All">All Sides</option><option value="Groom">Groom</option><option value="Bride">Bride</option><option value="Friends">Friends</option>
           </select>
-          <select className="input-field" value={filterRSVP} onChange={e => setFilterRSVP(e.target.value)} style={{ width: 130 }}>
+          <select className="input-field" value={filterRSVP} onChange={e => setFilterRSVP(e.target.value)} style={{ width: 120 }}>
             <option value="All">All RSVP</option><option value="Confirmed">Confirmed</option><option value="Pending">Pending</option><option value="Declined">Declined</option>
           </select>
-          <span className="text-xs" style={{ color: 'var(--brown-muted)' }}>{filtered.length} of {data.length} shown</span>
+          <span className="text-xs" style={{ color: 'var(--brown-muted)' }}>{filtered.length} of {data.length}</span>
         </div>
 
         {loading ? (
@@ -265,7 +267,7 @@ export default function GuestListClient({ guests }: { guests: Guest[] }) {
         ) : (
           <div className="table-container">
             <table>
-              <thead><tr><th>Name</th><th>Side</th><th>Role</th><th>Contact</th><th>Invitation</th><th>RSVP</th><th>Pax</th><th>Notes</th><th style={{ width: 220 }}>Actions</th></tr></thead>
+              <thead><tr><th>Name</th><th>Side</th><th>Role</th><th>Contact</th><th>Invitation</th><th>RSVP</th><th>Pax</th><th>Notes</th><th style={{ width: 160 }}>Actions</th></tr></thead>
               <tbody>
                 {filtered.map((guest, i) => {
                   const rowIndex = data.findIndex(d => d === guest)

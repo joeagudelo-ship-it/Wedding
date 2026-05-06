@@ -67,28 +67,28 @@ function SupplierRow({ supplier, rowIndex, onUpdate }: { supplier: Supplier; row
   if (isEditing) {
     return (
       <tr style={{ background: 'var(--sakura-ultra)' }}>
-        <td><input className="input-field" value={data.category} onChange={e => setData(d => ({ ...d, category: e.target.value }))} style={{ width: 100 }} /></td>
-        <td><input className="input-field" value={data.supplierName} onChange={e => setData(d => ({ ...d, supplierName: e.target.value }))} style={{ width: 140 }} /></td>
-        <td><input className="input-field" value={data.contactPerson} onChange={e => setData(d => ({ ...d, contactPerson: e.target.value }))} style={{ width: 100 }} /></td>
-        <td><input className="input-field" value={data.contactNo} onChange={e => setData(d => ({ ...d, contactNo: e.target.value }))} style={{ width: 110 }} /></td>
-        <td><input className="input-field" value={data.totalPrice} onChange={e => setData(d => ({ ...d, totalPrice: e.target.value }))} style={{ width: 100 }} /></td>
-        <td><input className="input-field" value={data.downpayment} onChange={e => setData(d => ({ ...d, downpayment: e.target.value }))} style={{ width: 100 }} /></td>
+        <td><input className="input-field" value={data.category} onChange={e => setData(d => ({ ...d, category: e.target.value }))} style={{ width: 80 }} /></td>
+        <td><input className="input-field" value={data.supplierName} onChange={e => setData(d => ({ ...d, supplierName: e.target.value }))} style={{ width: 120 }} /></td>
+        <td><input className="input-field" value={data.contactPerson} onChange={e => setData(d => ({ ...d, contactPerson: e.target.value }))} style={{ width: 90 }} /></td>
+        <td><input className="input-field" value={data.totalPrice} onChange={e => setData(d => ({ ...d, totalPrice: e.target.value }))} style={{ width: 80 }} /></td>
+        <td><input className="input-field" value={data.downpayment} onChange={e => setData(d => ({ ...d, downpayment: e.target.value }))} style={{ width: 80 }} /></td>
         <td className="text-sm peso" style={{ color: balance > 0 ? 'var(--warning)' : 'var(--success)' }}>{formatMoney(balance)}</td>
         <td>
-          <select className="input-field" value={data.paid} onChange={e => setData(d => ({ ...d, paid: e.target.value }))} style={{ width: 100 }}>
+          <select className="input-field" value={data.paid} onChange={e => setData(d => ({ ...d, paid: e.target.value }))} style={{ width: 85 }}>
             <option value="No">No</option><option value="Partial">Partial</option><option value="Paid">Paid</option><option value="Sponsored">Sponsored</option><option value="N/A">N/A</option>
           </select>
         </td>
         <td>
-          <select className="input-field" value={data.contractSigned} onChange={e => setData(d => ({ ...d, contractSigned: e.target.value }))} style={{ width: 80 }}>
+          <select className="input-field" value={data.contractSigned} onChange={e => setData(d => ({ ...d, contractSigned: e.target.value }))} style={{ width: 65 }}>
             <option value="No">No</option><option value="Yes">Yes</option><option value="N/A">N/A</option>
           </select>
         </td>
-        <td><input className="input-field" value={data.notes} onChange={e => setData(d => ({ ...d, notes: e.target.value }))} style={{ width: 140 }} /></td>
+        <td><input className="input-field" value={data.notes} onChange={e => setData(d => ({ ...d, notes: e.target.value }))} style={{ width: 120 }} /></td>
         <td>
-          <div className="flex gap-1.5">
-            <button className="btn btn-primary" onClick={save} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Save</button>
-            <button className="btn btn-secondary" onClick={cancel} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Cancel</button>
+          <div className="flex gap-1">
+            <button className="btn btn-primary" onClick={save} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Save</button>
+            <button className="btn btn-secondary" onClick={cancel} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Cancel</button>
+            <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 6px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
           </div>
         </td>
       </tr>
@@ -98,19 +98,22 @@ function SupplierRow({ supplier, rowIndex, onUpdate }: { supplier: Supplier; row
   return (
     <tr style={{ opacity: loading ? 0.5 : 1 }}>
       <td><span className="badge badge-neutral">{supplier.category}</span></td>
-      <td className="font-medium text-sm" style={{ color: 'var(--brown-deep)' }}>{supplier.supplierName}</td>
-      <td className="text-sm">{supplier.contactPerson}</td>
-      <td className="text-sm">{supplier.contactNo}</td>
+      <td className="font-medium text-sm" style={{ color: 'var(--brown-deep)' }} title={supplier.supplierName}>
+        <span className="truncate block" style={{ maxWidth: 130 }}>{supplier.supplierName}</span>
+      </td>
+      <td className="text-sm" title={supplier.contactPerson || supplier.contactNo}>
+        <span className="truncate block" style={{ maxWidth: 100 }}>{supplier.contactPerson || supplier.contactNo || '—'}</span>
+      </td>
       <td className="text-sm font-medium peso">{supplier.totalPrice}</td>
       <td className="text-sm peso">{supplier.downpayment}</td>
-      <td><div style={{ minWidth: 80 }}><div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width: `${pct}%` }} /></div><div className="text-xs mt-1 text-center" style={{ color: 'var(--brown-muted)' }}>{pct}%</div></div></td>
+      <td className="text-sm font-medium peso" style={{ color: balance > 0 ? 'var(--warning)' : 'var(--success)' }}>{formatMoney(balance)}</td>
       <td><StatusBadge status={supplier.paid} /></td>
       <td><StatusBadge status={supplier.contractSigned} /></td>
       <td className="text-sm max-w-xs truncate" style={{ color: 'var(--brown-muted)' }} title={supplier.notes}>{supplier.notes}</td>
       <td>
         <div className="flex gap-1">
-          <button className="btn btn-secondary" onClick={() => setIsEditing(true)} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Edit</button>
-          <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 8px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
+          <button className="btn btn-secondary" onClick={() => setIsEditing(true)} disabled={loading} style={{ padding: '4px 6px', fontSize: 11 }}>Edit</button>
+          <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 6px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
         </div>
       </td>
     </tr>
@@ -146,15 +149,15 @@ function AddSupplierForm({ onAdd }: { onAdd: () => void }) {
     <form onSubmit={submit} className="flex gap-2 items-end flex-wrap" style={{ marginBottom: 16 }}>
       <div>
         <label className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Category</label>
-        <input className="input-field" value={data.category} onChange={e => setData(d => ({ ...d, category: e.target.value }))} placeholder="e.g. Catering" style={{ width: 130 }} />
+        <input className="input-field" value={data.category} onChange={e => setData(d => ({ ...d, category: e.target.value }))} placeholder="e.g. Catering" style={{ width: 120 }} />
       </div>
-      <div style={{ flex: 1, minWidth: 160 }}>
+      <div style={{ flex: 1, minWidth: 140 }}>
         <label className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Supplier</label>
         <input className="input-field" value={data.supplierName} onChange={e => setData(d => ({ ...d, supplierName: e.target.value }))} placeholder="Supplier name..." />
       </div>
       <div>
         <label className="text-xs uppercase tracking-wider" style={{ color: 'var(--brown-muted)', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Total</label>
-        <input className="input-field" value={data.totalPrice} onChange={e => setData(d => ({ ...d, totalPrice: e.target.value }))} style={{ width: 100 }} />
+        <input className="input-field" value={data.totalPrice} onChange={e => setData(d => ({ ...d, totalPrice: e.target.value }))} style={{ width: 90 }} />
       </div>
       <button className="btn btn-primary" disabled={loading || !data.category || !data.supplierName} style={{ height: 36 }}>{loading ? 'Adding...' : 'Add Supplier'}</button>
     </form>
@@ -228,16 +231,16 @@ export default function VendorsClient({ suppliers }: { suppliers: Supplier[] }) 
 
       <div className="card-elevated">
         <div className="flex gap-3 items-center mb-4 flex-wrap">
-          <input className="input-field" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search suppliers..." style={{ width: 250 }} />
-          <select className="input-field" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ width: 140 }}>
+          <input className="input-field" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search suppliers..." style={{ width: 220 }} />
+          <select className="input-field" value={filterCategory} onChange={e => setFilterCategory(e.target.value)} style={{ width: 130 }}>
             <option value="All">All Categories</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-          <select className="input-field" value={filterPaid} onChange={e => setFilterPaid(e.target.value)} style={{ width: 130 }}>
+          <select className="input-field" value={filterPaid} onChange={e => setFilterPaid(e.target.value)} style={{ width: 120 }}>
             <option value="All">All Status</option>
             <option value="No">Not Paid</option><option value="Partial">Partial</option><option value="Paid">Paid</option><option value="Sponsored">Sponsored</option>
           </select>
-          <span className="text-xs" style={{ color: 'var(--brown-muted)' }}>{filtered.length} of {data.length} shown</span>
+          <span className="text-xs" style={{ color: 'var(--brown-muted)' }}>{filtered.length} of {data.length}</span>
         </div>
 
         {loading ? (
@@ -245,7 +248,7 @@ export default function VendorsClient({ suppliers }: { suppliers: Supplier[] }) 
         ) : (
           <div className="table-container">
             <table>
-              <thead><tr><th>Category</th><th>Supplier</th><th>Contact Person</th><th>Contact #</th><th>Total</th><th>Paid</th><th></th><th>Status</th><th>Contract</th><th>Notes</th><th style={{ width: 140 }}>Actions</th></tr></thead>
+              <thead><tr><th>Category</th><th>Supplier</th><th>Contact</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Contract</th><th>Notes</th><th style={{ width: 120 }}>Actions</th></tr></thead>
               <tbody>
                 {filtered.map((s, i) => <SupplierRow key={i} supplier={s} rowIndex={data.indexOf(s)} onUpdate={fetchData} />)}
               </tbody>

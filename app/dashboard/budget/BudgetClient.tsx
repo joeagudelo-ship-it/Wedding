@@ -20,12 +20,11 @@ function StatusBadge({ status }: { status: string }) {
 function SupplierRow({ supplier, rowIndex, onUpdate }: { supplier: Supplier; rowIndex: number; onUpdate: () => void }) {
   const { addToast } = useToast()
   const [isEditing, setIsEditing] = useState(false)
-  const [downpayment, setDownpayment] = useState(supplier.downpayment)
-  const [paidStatus, setPaidStatus] = useState(supplier.paid)
+  const [data, setData] = useState(supplier)
   const [loading, setLoading] = useState(false)
 
-  const total = parseMoney(supplier.totalPrice)
-  const paid = parseMoney(downpayment)
+  const total = parseMoney(data.totalPrice)
+  const paid = parseMoney(data.downpayment)
   const balance = total - paid
   const pct = total > 0 ? Math.min(Math.round((paid / total) * 100), 100) : 0
 
@@ -35,11 +34,11 @@ function SupplierRow({ supplier, rowIndex, onUpdate }: { supplier: Supplier; row
       const res = await fetch('/api/suppliers', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rowIndex, downpayment, paid: paidStatus, notes: supplier.notes }),
+        body: JSON.stringify({ rowIndex, ...data }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Failed to update')
-      addToast('Payment updated')
+      addToast('Supplier updated')
       setIsEditing(false)
       onUpdate()
     } catch (error) {
@@ -47,30 +46,76 @@ function SupplierRow({ supplier, rowIndex, onUpdate }: { supplier: Supplier; row
     } finally { setLoading(false) }
   }
 
-  const cancel = () => { setDownpayment(supplier.downpayment); setPaidStatus(supplier.paid); setIsEditing(false) }
+  const remove = async () => {
+    if (!confirm(`Remove ${supplier.supplierName}?`)) return
+    setLoading(true)
+    try {
+      const res = await fetch('/api/suppliers', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rowIndex }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || 'Failed to delete')
+      addToast('Supplier removed')
+      onUpdate()
+    } catch (error) {
+      addToast(error instanceof Error ? error.message : 'Failed to delete', 'error')
+    } finally { setLoading(false) }
+  }
+
+  const cancel = () => { setData(supplier); setIsEditing(false) }
+
+  if (isEditing) {
+    return (
+      <tr style={{ background: 'var(--sakura-ultra)' }}>
+        <td><input className="input-field" value={data.category} onChange={e => setData(d => ({ ...d, category: e.target.value }))} style={{ width: 100 }} /></td>
+        <td><input className="input-field" value={data.supplierName} onChange={e => setData(d => ({ ...d, supplierName: e.target.value }))} style={{ width: 140 }} /></td>
+        <td><input className="input-field" value={data.contactPerson} onChange={e => setData(d => ({ ...d, contactPerson: e.target.value }))} style={{ width: 100 }} /></td>
+        <td><input className="input-field" value={data.contactNo} onChange={e => setData(d => ({ ...d, contactNo: e.target.value }))} style={{ width: 110 }} /></td>
+        <td><input className="input-field" value={data.totalPrice} onChange={e => setData(d => ({ ...d, totalPrice: e.target.value }))} style={{ width: 100 }} /></td>
+        <td><input className="input-field" value={data.downpayment} onChange={e => setData(d => ({ ...d, downpayment: e.target.value }))} style={{ width: 100 }} /></td>
+        <td className="text-sm peso" style={{ color: balance > 0 ? 'var(--warning)' : 'var(--success)' }}>{formatMoney(balance)}</td>
+        <td>
+          <select className="input-field" value={data.paid} onChange={e => setData(d => ({ ...d, paid: e.target.value }))} style={{ width: 100 }}>
+            <option value="No">No</option><option value="Partial">Partial</option><option value="Paid">Paid</option><option value="Sponsored">Sponsored</option><option value="N/A">N/A</option>
+          </select>
+        </td>
+        <td>
+          <select className="input-field" value={data.contractSigned} onChange={e => setData(d => ({ ...d, contractSigned: e.target.value }))} style={{ width: 80 }}>
+            <option value="No">No</option><option value="Yes">Yes</option><option value="N/A">N/A</option>
+          </select>
+        </td>
+        <td><input className="input-field" value={data.notes} onChange={e => setData(d => ({ ...d, notes: e.target.value }))} style={{ width: 140 }} /></td>
+        <td>
+          <div className="flex gap-1.5">
+            <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Save</button>
+            <button className="btn btn-secondary" onClick={cancel} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Cancel</button>
+            <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 8px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
+          </div>
+        </td>
+      </tr>
+    )
+  }
 
   return (
     <tr style={{ opacity: loading ? 0.5 : 1 }}>
       <td><span className="badge badge-neutral">{supplier.category}</span></td>
       <td className="font-medium text-sm" style={{ color: 'var(--brown-deep)' }}>{supplier.supplierName}</td>
-      <td className="text-sm">{supplier.contactNo}</td>
+      <td className="text-sm">{supplier.contactPerson}</td>
       <td className="text-sm font-medium peso">{supplier.totalPrice}</td>
-      <td>{isEditing ? (
-        <input type="text" value={downpayment} onChange={e => setDownpayment(e.target.value)} className="input-field" style={{ width: 120 }} placeholder="₱0.00" />
-      ) : <span className="text-sm font-medium peso" style={{ color: paid > 0 ? 'var(--success)' : 'var(--brown-muted)' }}>{downpayment}</span>}</td>
+      <td className="text-sm peso">{supplier.downpayment}</td>
       <td className="text-sm font-medium peso" style={{ color: balance > 0 ? 'var(--warning)' : 'var(--success)' }}>{formatMoney(balance)}</td>
       <td><div style={{ width: 70 }}><div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width: `${pct}%` }} /></div><div className="text-xs mt-1 text-center" style={{ color: 'var(--brown-muted)' }}>{pct}%</div></div></td>
-      <td>{isEditing ? (
-        <select value={paidStatus} onChange={e => setPaidStatus(e.target.value)} className="input-field" style={{ width: 100 }}>
-          <option value="No">No</option><option value="Partial">Partial</option><option value="Paid">Paid</option><option value="Sponsored">Sponsored</option><option value="N/A">N/A</option>
-        </select>
-      ) : <StatusBadge status={paidStatus} />}</td>
-      <td>{isEditing ? (
-        <div className="flex gap-1.5">
-          <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Save</button>
-          <button className="btn btn-secondary" onClick={cancel} disabled={loading} style={{ padding: '4px 10px', fontSize: 12 }}>Cancel</button>
+      <td><StatusBadge status={supplier.paid} /></td>
+      <td><StatusBadge status={supplier.contractSigned} /></td>
+      <td className="text-sm max-w-xs truncate" style={{ color: 'var(--brown-muted)' }} title={supplier.notes}>{supplier.notes}</td>
+      <td>
+        <div className="flex gap-1">
+          <button className="btn btn-secondary" onClick={() => setIsEditing(true)} disabled={loading} style={{ padding: '4px 8px', fontSize: 11 }}>Edit</button>
+          <button className="btn" onClick={remove} disabled={loading} style={{ padding: '4px 8px', fontSize: 12, color: 'var(--danger)', background: 'var(--danger-soft)' }}>×</button>
         </div>
-      ) : <button className="btn btn-secondary" onClick={() => setIsEditing(true)} style={{ padding: '4px 10px', fontSize: 12 }}>Edit</button>}</td>
+      </td>
     </tr>
   )
 }
@@ -270,10 +315,10 @@ export default function BudgetClient({ suppliers, budget }: { suppliers: Supplie
 
       <div className="card-elevated">
         <h3 className="text-sm uppercase tracking-wider mb-1" style={{ color: 'var(--brown-muted)', letterSpacing: '0.08em', fontWeight: 500 }}>Supplier Payments</h3>
-        <p className="text-xs mb-4" style={{ color: 'var(--brown-muted)' }}>Click "Edit" to update downpayment and payment status</p>
+        <p className="text-xs mb-4" style={{ color: 'var(--brown-muted)' }}>Click "Edit" to modify any field — category, contact, pricing, contract, and notes</p>
         <div className="table-container">
           <table>
-            <thead><tr><th>Category</th><th>Supplier</th><th>Contact</th><th>Total</th><th>Paid</th><th>Balance</th><th></th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Category</th><th>Supplier</th><th>Contact Person</th><th>Total</th><th>Paid</th><th>Balance</th><th></th><th>Status</th><th>Contract</th><th>Notes</th><th style={{ width: 180 }}>Actions</th></tr></thead>
             <tbody>{suppliersData.map((s, i) => <SupplierRow key={i} supplier={s} rowIndex={i} onUpdate={fetchSuppliers} />)}</tbody>
           </table>
         </div>
